@@ -1,62 +1,104 @@
 // ============================================
-// InvoiceFollow — Main Script
-// Yeh file UI handle karti hai + backend API call karti hai
-// API key ab yahan NAHI hai — woh Vercel pe safe hai
+// InvoiceFollow — Main Script with Paywall
+// Free users: 3 generations. Then paywall.
 // ============================================
 
-// ---------- DOM Elements pakdo ----------
+// ---------- Constants ----------
+const FREE_LIMIT = 3;
+const STORAGE_KEY = "invoicefollow_usage";
+const PRO_KEY = "invoicefollow_pro";
+
+// ⚠️ YAHAN APNA LEMON SQUEEZY PAYMENT LINK DAALO (Step 5 mein)
+const PAYMENT_LINK = "https://YOUR-STORE.lemonsqueezy.com/checkout/buy/YOUR-PRODUCT-ID";
+
+// ---------- DOM ----------
 const generateBtn = document.getElementById("generateBtn");
 const resetBtn = document.getElementById("resetBtn");
 const statusEl = document.getElementById("status");
 const formSection = document.getElementById("form-section");
 const outputSection = document.getElementById("output-section");
+const paywall = document.getElementById("paywall");
+const usageCounter = document.getElementById("usageCounter");
 
-// ---------- Event Listeners lagao ----------
+// ---------- Usage tracking ----------
+function getUsage() {
+  return parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
+}
 
-// Generate button dabane pe emails banao
+function setUsage(n) {
+  localStorage.setItem(STORAGE_KEY, n.toString());
+  updateUsageDisplay();
+}
+
+function isPro() {
+  return localStorage.getItem(PRO_KEY) === "true";
+}
+
+function updateUsageDisplay() {
+  if (isPro()) {
+    usageCounter.textContent = "✨ Pro user — unlimited reminders";
+    return;
+  }
+  const used = getUsage();
+  const left = FREE_LIMIT - used;
+  if (left > 0) {
+    usageCounter.textContent = `${left} free reminder${left === 1 ? "" : "s"} left`;
+  } else {
+    usageCounter.textContent = "Free limit reached";
+  }
+}
+
+// ---------- Event Listeners ----------
 generateBtn.addEventListener("click", generateEmails);
 
-// Reset button dabane pe form wapas dikhao
 resetBtn.addEventListener("click", () => {
   outputSection.classList.add("hidden");
   formSection.classList.remove("hidden");
   statusEl.textContent = "";
+  checkPaywall();
 });
 
-// Har "Copy" button pe clipboard mein copy karo
 document.querySelectorAll(".copy-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = document.getElementById(btn.dataset.target);
     navigator.clipboard.writeText(target.value);
-
-    // 1.5 second ke liye "Copied!" dikhao
     btn.textContent = "Copied!";
     setTimeout(() => (btn.textContent = "Copy"), 1500);
   });
 });
 
-// ============================================
-// MAIN FUNCTION: Emails Generate Karo
-// ============================================
+// Upgrade buttons
+document.querySelectorAll("#upgradeBtn, #paywallUpgradeBtn, #pricingUpgradeBtn, #lifetimeBtn").forEach((btn) => {
+  if (btn) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.open(PAYMENT_LINK, "_blank");
+    });
+  }
+});
+
+// ---------- Main function ----------
 async function generateEmails() {
-  // ---------- Form se values uthao ----------
+  // Check paywall
+  if (!isPro() && getUsage() >= FREE_LIMIT) {
+    showPaywall();
+    return;
+  }
+
   const clientName = document.getElementById("clientName").value.trim();
   const yourName = document.getElementById("yourName").value.trim();
   const amount = document.getElementById("amount").value.trim();
   const dueDate = document.getElementById("dueDate").value;
   const workDesc = document.getElementById("workDesc").value.trim();
 
-  // ---------- Validation: saari fields bhari honi chahiye ----------
   if (!clientName || !yourName || !amount || !dueDate || !workDesc) {
-    statusEl.textContent = "⚠️ Bhai, saari fields bharo pehle!";
+    statusEl.textContent = "⚠️ Please fill in all fields";
     return;
   }
 
-  // ---------- Button disable karo (double click rokne ke liye) ----------
   generateBtn.disabled = true;
-  statusEl.textContent = "⏳ AI emails likh raha hai... 10-15 second lagenge";
+  statusEl.textContent = "⏳ AI is writing your emails...";
 
-  // ---------- AI ke liye prompt banao ----------
   const prompt = `You are an expert at writing polite but effective payment reminder emails for freelancers.
 
 Write 3 escalating payment reminder emails for this situation:
@@ -92,37 +134,31 @@ Subject: ...
 
 [body]`;
 
-  // ---------- Backend API call karo (Vercel serverless function) ----------
-  // Yahan API key NAHI hai — woh /api/generate ke andar safe hai
   try {
     const text = await callGenerateAPI(prompt);
-
-    // ---------- AI ke response ko 3 emails mein todo ----------
     const emails = parseEmails(text);
 
-    // ---------- Har email ko apne textarea mein daalo ----------
-    document.getElementById("email1").value = emails[0] || "Email 1 generate nahi hua. Dobara try karo.";
-    document.getElementById("email2").value = emails[1] || "Email 2 generate nahi hua. Dobara try karo.";
-    document.getElementById("email3").value = emails[2] || "Email 3 generate nahi hua. Dobara try karo.";
+    document.getElementById("email1").value = emails[0] || "Could not generate email 1.";
+    document.getElementById("email2").value = emails[1] || "Could not generate email 2.";
+    document.getElementById("email3").value = emails[2] || "Could not generate email 3.";
 
-    // ---------- Form hide karo, output dikhao ----------
+    // Increment usage (if not Pro)
+    if (!isPro()) {
+      setUsage(getUsage() + 1);
+    }
+
     formSection.classList.add("hidden");
     outputSection.classList.remove("hidden");
     statusEl.textContent = "";
   } catch (err) {
-    // ---------- Error aaye toh user ko batao ----------
-    console.error("Error:", err);
-    statusEl.textContent = "❌ Error: " + err.message + " — thodi der baad try karo";
+    console.error(err);
+    statusEl.textContent = "❌ Error: " + err.message;
   } finally {
-    // ---------- Button wapas enable karo ----------
     generateBtn.disabled = false;
   }
 }
 
-// ============================================
-// HELPER: Backend API call with retry logic
-// Agar 429 (rate limit) aaye toh 3 baar try karega
-// ============================================
+// ---------- API call with retry ----------
 async function callGenerateAPI(prompt, maxRetries = 3) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const response = await fetch("/api/generate", {
@@ -131,41 +167,44 @@ async function callGenerateAPI(prompt, maxRetries = 3) {
       body: JSON.stringify({ prompt }),
     });
 
-    // ---------- Agar rate limit (429) hai toh wait karo ----------
     if (response.status === 429) {
-      const waitSec = 5 * (attempt + 1); // 5s, 10s, 15s
-      statusEl.textContent = `⏳ Rate limit lagi. ${waitSec} second wait kar raha hoon...`;
+      const waitSec = 5 * (attempt + 1);
+      statusEl.textContent = `⏳ Rate limit. Waiting ${waitSec}s...`;
       await new Promise((r) => setTimeout(r, waitSec * 1000));
-      continue; // dobara try karo
+      continue;
     }
 
-    // ---------- Koi aur error? Toh throw karo ----------
     if (!response.ok) {
       const errData = await response.json().catch(() => ({}));
       throw new Error(errData.error || `Server error ${response.status}`);
     }
 
-    // ---------- Success! Text nikaalo ----------
     const data = await response.json();
-    if (!data.text) {
-      throw new Error("AI ne khaali response diya");
-    }
+    if (!data.text) throw new Error("AI returned empty response");
     return data.text;
   }
-
-  // ---------- 3 retries ke baad bhi fail ----------
-  throw new Error("Rate limit khatam nahi hui. 1 minute baad try karo.");
+  throw new Error("Rate limit exceeded. Try again in a minute.");
 }
 
-// ============================================
-// HELPER: AI response ko 3 emails mein todo
-// Format: "=== EMAIL 1 ===\n...\n=== EMAIL 2 ===\n...\n=== EMAIL 3 ===\n..."
-// ============================================
+// ---------- Parse 3 emails ----------
 function parseEmails(text) {
-  // "=== EMAIL 1 ===" jaise markers pe split karo
   const parts = text.split(/===\s*EMAIL\s*\d\s*===/i);
-
-  // parts[0] khaali/preamble hota hai — usse skip karo
-  // parts[1], parts[2], parts[3] = 3 emails
   return parts.slice(1).map((p) => p.trim());
 }
+
+// ---------- Paywall ----------
+function checkPaywall() {
+  if (!isPro() && getUsage() >= FREE_LIMIT) {
+    showPaywall();
+  }
+}
+
+function showPaywall() {
+  formSection.classList.add("hidden");
+  outputSection.classList.add("hidden");
+  paywall.classList.remove("hidden");
+}
+
+// ---------- Init ----------
+updateUsageDisplay();
+checkPaywall();

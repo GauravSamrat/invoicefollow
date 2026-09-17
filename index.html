@@ -4,77 +4,270 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>InvoiceFollow — AI Payment Reminders for Freelancers</title>
+  <meta name="description" content="Stop chasing clients for payments. AI writes polite reminder emails in 10 seconds. Free for 3 invoices." />
   <link rel="stylesheet" href="style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
 <body>
-  <header>
-    <h1>InvoiceFollow</h1>
-    <p class="tagline">Stop chasing clients. Let AI write the awkward emails.</p>
-  </header>
 
-  <main>
-    <!-- INPUT FORM -->
-    <section class="card" id="form-section">
-      <h2>Invoice Details</h2>
+  <!-- ================= NAVBAR ================= -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <a href="#" class="logo">
+        <span class="logo-icon">💸</span>
+        <span class="logo-text">InvoiceFollow</span>
+      </a>
+      <div class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#tool" class="nav-cta">Try Free</a>
+      </div>
+    </div>
+  </nav>
 
-      <label>Client Name
-        <input type="text" id="clientName" placeholder="e.g. John Smith" />
-      </label>
+  <!-- ================= HERO ================= -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-badge">✨ Built for freelancers who hate chasing money</div>
+      <h1 class="hero-title">
+        Stop chasing clients<br />
+        for <span class="gradient-text">payments.</span>
+      </h1>
+      <p class="hero-subtitle">
+        AI writes polite, escalating reminder emails in <strong>10 seconds</strong>.
+        Paste invoice details. Get 3 ready-to-send emails. Get paid faster.
+      </p>
+      <div class="hero-cta">
+        <a href="#tool" class="btn-primary">Generate Free Reminders →</a>
+        <a href="#how" class="btn-secondary">See how it works</a>
+      </div>
+      <p class="hero-footnote">No signup required · 3 free reminders · No credit card</p>
+    </div>
+  </section>
 
-      <label>Your Name
-        <input type="text" id="yourName" placeholder="e.g. Rahul Sharma" />
-      </label>
+  <!-- ================= SOCIAL PROOF ================= -->
+  <section class="proof">
+    <p class="proof-label">Trusted by freelancers from</p>
+    <div class="proof-logos">
+      <span>🎬 Video Editors</span>
+      <span>🎨 Designers</span>
+      <span>✍️ Writers</span>
+      <span>💻 Developers</span>
+      <span>📸 Photographers</span>
+    </div>
+  </section>
 
-      <label>Invoice Amount
-        <input type="text" id="amount" placeholder="e.g. $1,200" />
-      </label>
+  <!-- ================= HOW IT WORKS ================= -->
+  <section class="how" id="how">
+    <h2 class="section-title">How it works</h2>
+    <p class="section-subtitle">Three steps. Ten seconds. Paid faster.</p>
 
-      <label>Due Date
-        <input type="date" id="dueDate" />
-      </label>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-number">1</div>
+        <h3>Paste invoice details</h3>
+        <p>Client name, amount, due date, what you worked on. That's it.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-number">2</div>
+        <h3>AI writes 3 emails</h3>
+        <p>Gentle nudge (Day 3). Firm reminder (Day 7). Final notice (Day 14).</p>
+      </div>
+      <div class="how-card">
+        <div class="how-number">3</div>
+        <h3>Copy, paste, get paid</h3>
+        <p>Send from your own email. No awkward conversations. No lost money.</p>
+      </div>
+    </div>
+  </section>
 
-      <label>What's the work? (short)
-        <input type="text" id="workDesc" placeholder="e.g. video editing for YouTube channel" />
-      </label>
-
-      <button id="generateBtn">Generate Reminder Emails</button>
-      <p id="status"></p>
-    </section>
-
-    <!-- OUTPUT -->
-    <section id="output-section" class="hidden">
-      <h2>Your Reminder Emails</h2>
-
-      <div class="email-card">
-        <div class="email-header">
-          <span class="badge">Day 3 — Gentle</span>
-          <button class="copy-btn" data-target="email1">Copy</button>
-        </div>
-        <textarea id="email1" readonly></textarea>
+  <!-- ================= TOOL (MAIN) ================= -->
+  <section class="tool" id="tool">
+    <div class="tool-container">
+      <div class="tool-header">
+        <h2>Generate your reminders</h2>
+        <p>Free for your first 3 invoices. No signup needed.</p>
+        <div class="usage-counter" id="usageCounter"></div>
       </div>
 
-      <div class="email-card">
-        <div class="email-header">
-          <span class="badge">Day 7 — Firm</span>
-          <button class="copy-btn" data-target="email2">Copy</button>
+      <!-- INPUT FORM -->
+      <div id="form-section" class="tool-card">
+        <div class="input-row">
+          <label>
+            <span>Client Name</span>
+            <input type="text" id="clientName" placeholder="e.g. John Smith" />
+          </label>
+          <label>
+            <span>Your Name</span>
+            <input type="text" id="yourName" placeholder="e.g. Rahul Sharma" />
+          </label>
         </div>
-        <textarea id="email2" readonly></textarea>
+
+        <div class="input-row">
+          <label>
+            <span>Invoice Amount</span>
+            <input type="text" id="amount" placeholder="e.g. $1,200" />
+          </label>
+          <label>
+            <span>Due Date</span>
+            <input type="date" id="dueDate" />
+          </label>
+        </div>
+
+        <label>
+          <span>What was the work?</span>
+          <input type="text" id="workDesc" placeholder="e.g. video editing for YouTube channel" />
+        </label>
+
+        <button id="generateBtn" class="btn-generate">
+          <span id="btnText">✨ Generate 3 Reminder Emails</span>
+        </button>
+        <p id="status" class="status"></p>
       </div>
 
-      <div class="email-card">
-        <div class="email-header">
-          <span class="badge">Day 14 — Final</span>
-          <button class="copy-btn" data-target="email3">Copy</button>
+      <!-- OUTPUT -->
+      <div id="output-section" class="hidden">
+        <div class="output-header">
+          <h3>Your 3 reminder emails</h3>
+          <button id="resetBtn" class="btn-reset">← Generate new</button>
         </div>
-        <textarea id="email3" readonly></textarea>
+
+        <div class="email-card">
+          <div class="email-header">
+            <span class="badge badge-green">Day 3 — Gentle</span>
+            <button class="copy-btn" data-target="email1">Copy</button>
+          </div>
+          <textarea id="email1" readonly></textarea>
+        </div>
+
+        <div class="email-card">
+          <div class="email-header">
+            <span class="badge badge-yellow">Day 7 — Firm</span>
+            <button class="copy-btn" data-target="email2">Copy</button>
+          </div>
+          <textarea id="email2" readonly></textarea>
+        </div>
+
+        <div class="email-card">
+          <div class="email-header">
+            <span class="badge badge-red">Day 14 — Final</span>
+            <button class="copy-btn" data-target="email3">Copy</button>
+          </div>
+          <textarea id="email3" readonly></textarea>
+        </div>
+
+        <div class="upgrade-cta">
+          <p>💡 <strong>Love it?</strong> Get unlimited reminders for $9/month.</p>
+          <a href="#" class="btn-primary btn-upgrade" id="upgradeBtn">Upgrade to Pro →</a>
+        </div>
       </div>
 
-      <button id="resetBtn">Generate New</button>
-    </section>
-  </main>
+      <!-- PAYWALL (hidden until limit reached) -->
+      <div id="paywall" class="hidden paywall">
+        <div class="paywall-icon">🔒</div>
+        <h3>You've used your 3 free reminders</h3>
+        <p>Upgrade to Pro for unlimited reminders, custom templates, and priority support.</p>
+        <a href="#" class="btn-primary btn-upgrade" id="paywallUpgradeBtn">Upgrade for $9/month →</a>
+        <p class="paywall-footnote">Cancel anytime · 7-day money-back guarantee</p>
+      </div>
+    </div>
+  </section>
 
+  <!-- ================= PRICING ================= -->
+  <section class="pricing" id="pricing">
+    <h2 class="section-title">Simple, honest pricing</h2>
+    <p class="section-subtitle">Cheaper than one late payment.</p>
+
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3>Free</h3>
+        <div class="price">$0<span>/forever</span></div>
+        <ul>
+          <li>✅ 3 reminder email sets</li>
+          <li>✅ All 3 escalation levels</li>
+          <li>✅ Copy to clipboard</li>
+          <li>❌ Unlimited generations</li>
+          <li>❌ Priority support</li>
+        </ul>
+        <a href="#tool" class="btn-secondary">Start Free</a>
+      </div>
+
+      <div class="pricing-card pricing-featured">
+        <div class="popular-badge">MOST POPULAR</div>
+        <h3>Pro</h3>
+        <div class="price">$9<span>/month</span></div>
+        <ul>
+          <li>✅ Unlimited reminder sets</li>
+          <li>✅ Custom tone & language</li>
+          <li>✅ Save client history</li>
+          <li>✅ Priority support</li>
+          <li>✅ Cancel anytime</li>
+        </ul>
+        <a href="#" class="btn-primary" id="pricingUpgradeBtn">Upgrade to Pro →</a>
+      </div>
+
+      <div class="pricing-card">
+        <h3>Lifetime</h3>
+        <div class="price">$49<span>/one-time</span></div>
+        <ul>
+          <li>✅ Everything in Pro</li>
+          <li>✅ Pay once, use forever</li>
+          <li>✅ All future updates</li>
+          <li>✅ No subscription</li>
+          <li>✅ Limited to first 100 users</li>
+        </ul>
+        <a href="#" class="btn-secondary" id="lifetimeBtn">Get Lifetime →</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= FAQ ================= -->
+  <section class="faq">
+    <h2 class="section-title">Questions?</h2>
+    <div class="faq-list">
+      <details>
+        <summary>Is this really free?</summary>
+        <p>Yes. Your first 3 reminder sets are completely free — no signup, no credit card. Upgrade only if you find it useful.</p>
+      </details>
+      <details>
+        <summary>Will clients know I used AI?</summary>
+        <p>No. The emails are written in your tone, with your name and details. They look like you wrote them — because you did (with a little help).</p>
+      </details>
+      <details>
+        <summary>What if I want a refund?</summary>
+        <p>7-day money-back guarantee, no questions asked. Just email us.</p>
+      </details>
+      <details>
+        <summary>Do you store my client data?</summary>
+        <p>No. Nothing is stored on our servers. Your invoice details are sent to the AI, emails are generated, and everything is discarded.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- ================= FINAL CTA ================= -->
+  <section class="final-cta">
+    <h2>Stop losing money to late payments.</h2>
+    <p>Generate your first 3 reminders free. Takes 10 seconds.</p>
+    <a href="#tool" class="btn-primary btn-large">Generate Free Reminders →</a>
+  </section>
+
+  <!-- ================= FOOTER ================= -->
   <footer>
-    <p>Built with ❤️ in India · InvoiceFollow © 2026</p>
+    <div class="footer-container">
+      <div class="footer-brand">
+        <span class="logo-icon">💸</span>
+        <span class="logo-text">InvoiceFollow</span>
+        <p>AI payment reminders for freelancers.</p>
+      </div>
+      <div class="footer-links">
+        <a href="#how">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="mailto:hello@invoicefollow.com">Contact</a>
+      </div>
+    </div>
+    <p class="footer-copy">© 2026 InvoiceFollow · Built with ❤️ in India</p>
   </footer>
 
   <script src="script.js"></script>
