@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>InvoiceFollow — AI Payment Reminders for Freelancers</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>InvoiceFollow</h1>
+    <p class="tagline">Stop chasing clients. Let AI write the awkward emails.</p>
+  </header>
+
+  <main>
+    <!-- INPUT FORM -->
+    <section class="card" id="form-section">
+      <h2>Invoice Details</h2>
+
+      <label>Client Name
+        <input type="text" id="clientName" placeholder="e.g. John Smith" />
+      </label>
+
+      <label>Your Name
+        <input type="text" id="yourName" placeholder="e.g. Rahul Sharma" />
+      </label>
+
+      <label>Invoice Amount
+        <input type="text" id="amount" placeholder="e.g. $1,200" />
+      </label>
+
+      <label>Due Date
+        <input type="date" id="dueDate" />
+      </label>
+
+      <label>What's the work? (short)
+        <input type="text" id="workDesc" placeholder="e.g. video editing for YouTube channel" />
+      </label>
+
+      <button id="generateBtn">Generate Reminder Emails</button>
+      <p id="status"></p>
+    </section>
+
+    <!-- OUTPUT -->
+    <section id="output-section" class="hidden">
+      <h2>Your Reminder Emails</h2>
+
+      <div class="email-card">
+        <div class="email-header">
+          <span class="badge">Day 3 — Gentle</span>
+          <button class="copy-btn" data-target="email1">Copy</button>
+        </div>
+        <textarea id="email1" readonly></textarea>
+      </div>
+
+      <div class="email-card">
+        <div class="email-header">
+          <span class="badge">Day 7 — Firm</span>
+          <button class="copy-btn" data-target="email2">Copy</button>
+        </div>
+        <textarea id="email2" readonly></textarea>
+      </div>
+
+      <div class="email-card">
+        <div class="email-header">
+          <span class="badge">Day 14 — Final</span>
+          <button class="copy-btn" data-target="email3">Copy</button>
+        </div>
+        <textarea id="email3" readonly></textarea>
+      </div>
+
+      <button id="resetBtn">Generate New</button>
+    </section>
+  </main>
+
+  <footer>
+    <p>Built with ❤️ in India · InvoiceFollow © 2026</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
