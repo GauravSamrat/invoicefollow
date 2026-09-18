@@ -7,8 +7,7 @@ const FREE_LIMIT = 3;
 const STORAGE_KEY = "invoicefollow_usage";
 const PRO_KEY = "invoicefollow_pro";
 
-// ⚠️ Replace with your Lemon Squeezy payment link (Step 5)
-const PAYMENT_LINK = "https://YOUR-STORE.lemonsqueezy.com/checkout/buy/YOUR-PRODUCT-ID";
+
 
 // ---------- DOM ----------
 const generateBtn = document.getElementById("generateBtn");
@@ -67,15 +66,7 @@ document.querySelectorAll(".copy-btn").forEach((btn) => {
 });
 
 // Upgrade buttons
-["upgradeBtn", "paywallUpgradeBtn", "pricingUpgradeBtn", "lifetimeBtn"].forEach((id) => {
-  const btn = document.getElementById(id);
-  if (btn) {
-    btn.addEventListener("click", (e) => {
-      e.preventDefault();
-      window.open(PAYMENT_LINK, "_blank");
-    });
-  }
-});
+
 
 // ---------- Main function ----------
 async function generateEmails() {
@@ -195,6 +186,84 @@ function checkPaywall() {
   if (!isPro() && getUsage() >= FREE_LIMIT) {
     showPaywall();
   }
+}
+
+// ============================================
+// Razorpay Checkout — Payment Flow
+// ============================================
+
+async function openRazorpayCheckout(amount = 9) {
+  try {
+    statusEl.textContent = "Opening payment...";
+
+    // Step 1: Backend se order create karo
+    const response = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount: amount, currency: "USD" }),
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      throw new Error(data.error || "Payment setup failed");
+    }
+
+    // Step 2: Razorpay Checkout options
+    const options = {
+      key: data.keyId,
+      amount: data.amount,
+      currency: data.currency,
+      name: "InvoiceFollow",
+      description: "Pro Plan — Unlimited Reminders",
+      order_id: data.orderId,
+      handler: function (response) {
+        // Payment success!
+        localStorage.setItem("invoicefollow_pro", "true");
+        alert("Payment successful! Pro access enabled.");
+        window.location.reload();
+      },
+      prefill: {
+        name: "",
+        email: "",
+      },
+      theme: {
+        color: "#4f46e5",
+      },
+      modal: {
+        ondismiss: function () {
+          statusEl.textContent = "";
+        },
+      },
+    };
+
+    // Step 3: Checkout open karo
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+    statusEl.textContent = "";
+  } catch (err) {
+    console.error("Payment error:", err);
+    statusEl.textContent = "Payment error: " + err.message;
+  }
+}
+
+// Upgrade buttons ko Razorpay se link karo
+["upgradeBtn", "paywallUpgradeBtn", "pricingUpgradeBtn"].forEach((id) => {
+  const btn = document.getElementById(id);
+  if (btn) {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      openRazorpayCheckout(9); // $9/month
+    });
+  }
+});
+
+// Lifetime button ke liye (agar chahiye)
+const lifetimeBtnEl = document.getElementById("lifetimeBtn");
+if (lifetimeBtnEl) {
+  lifetimeBtnEl.addEventListener("click", (e) => {
+    e.preventDefault();
+    openRazorpayCheckout(49); // $49 lifetime
+  });
 }
 
 function showPaywall() {
