@@ -86,12 +86,18 @@ async function getUserCredits(userId) {
 }
 
 // Credits deduct karo (task ke baad)
+// Credits deduct karo (task ke baad)
 async function deductCredits(userId, amount, taskType, description) {
-  // Pehle current credits get karo
+  // Current profile lo
   const profile = await getUserProfile(userId);
-  if (!profile) return false;
+  if (!profile) return { success: false, error: "Profile not found" };
 
-  // Check karo enough credits hain
+  // Pro hai toh unlimited — kuch deduct mat karo
+  if (profile.subscription === "pro") {
+    return { success: true, newBalance: "unlimited" };
+  }
+
+  // Enough credits hain?
   if (profile.credits < amount) {
     return { success: false, error: "Insufficient credits" };
   }
@@ -111,6 +117,9 @@ async function deductCredits(userId, amount, taskType, description) {
     task_type: taskType,
     description: description,
   });
+
+  // Update local profile
+  userProfile.credits = profile.credits - amount;
 
   return { success: true, newBalance: profile.credits - amount };
 }

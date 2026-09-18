@@ -9,9 +9,10 @@
 // - Demand letter generator
 // - WhatsApp & Email reminders
 // - CSV import/export
-// - OCR invoice scanning (Gemini Vision)
+// - OCR invoice scanning (Gemini Vision) — 3 credits
 // - Google Sheets direct import
 // - Supabase auth + multi-device sync
+// - Credits-based paywall (3 credits per AI task)
 // ============================================
 
 // ============================================
@@ -47,7 +48,8 @@ let invalidRows = [];
 // ---------- Constants ----------
 const STORAGE_INVOICES = "invoicefollow_invoices";
 const STORAGE_SETTINGS = "invoicefollow_settings";
-const FREE_LIMIT = 5; // Free plan mein max 5 invoices
+const FREE_LIMIT = 5;             // Free plan mein max 5 invoices
+const CREDITS_PER_TASK = 3;       // Har AI task ka cost
 
 // ============================================
 // AUTH — Check karo user logged in hai ya nahi
@@ -71,6 +73,69 @@ async function checkAuthAndLoad() {
   }
 
   return true;
+}
+
+// ============================================
+// CREDITS — Check aur deduct karo
+// ============================================
+
+// Credits check karo — kaafi hain ya nahi
+function hasEnoughCredits(cost = CREDITS_PER_TASK) {
+  if (isPro()) return true; // Pro user ke paas unlimited hai
+  if (!userProfile) return false;
+  return (userProfile.credits || 0) >= cost;
+}
+
+// Credits insufficient ka message dikhao
+function showInsufficientCreditsMessage() {
+  alert(
+    `Not enough credits.\n\nYou need ${CREDITS_PER_TASK} credits for this task.\n\nYour balance: ${userProfile?.credits || 0} credits.\n\nPlease buy more credits to continue.`
+  );
+}
+
+// Credits deduct karo task ke baad
+async function deductTaskCredits(taskType, description) {
+  // Pro hai toh kuch deduct mat karo
+  if (isPro()) return { success: true };
+
+  // Credits check karo
+  if (!userProfile || userProfile.credits < CREDITS_PER_TASK) {
+    return { success: false, error: "Insufficient credits" };
+  }
+
+  try {
+    // Credits deduct karo Supabase mein
+    const newBalance = userProfile.credits - CREDITS_PER_TASK;
+
+    const { error: updateError } = await window.supabaseClient
+      .from("users")
+      .update({ credits: newBalance })
+      .eq("id", currentUser.id);
+
+    if (updateError) {
+      console.error("Credit deduction error:", updateError);
+      return { success: false, error: updateError.message };
+    }
+
+    // Transaction log karo
+    await window.supabaseClient.from("credits_transactions").insert({
+      user_id: currentUser.id,
+      amount: -CREDITS_PER_TASK,
+      task_type: taskType,
+      description: description,
+    });
+
+    // Local profile update karo
+    userProfile.credits = newBalance;
+
+    // User menu refresh karo
+    await renderUserMenu();
+
+    return { success: true, newBalance };
+  } catch (err) {
+    console.error("Credit deduction failed:", err);
+    return { success: false, error: err.message };
+  }
 }
 
 // ============================================
@@ -279,7 +344,7 @@ function computeNextFollowUp(inv) {
   if (!inv.dueDate || inv.status === "paid") return inv.dueDate || null;
   const days = [settings.days1, settings.days2, settings.days3];
   const sent = inv.remindersSent || 0;
-  if (sent >= 3) return null; // Saare reminders bhej diye
+  if (sent >= 3) return null;
 
   const nextDate = new Date(inv.dueDate);
   nextDate.setDate(nextDate.getDate() + days[sent]);
@@ -385,7 +450,6 @@ function renderTodayActions() {
     container.appendChild(banner);
   });
 
-  // Koi action nahi toh all clear
   if (actions.length === 0) {
     if (toConfirm.length === 0) {
       allClear.classList.remove("hidden");
@@ -397,7 +461,6 @@ function renderTodayActions() {
 
   allClear.classList.add("hidden");
 
-  // Action cards render karo
   actions.forEach(inv => {
     const card = document.createElement("div");
     card.className = "action-card";
@@ -444,7 +507,6 @@ function renderInvoices() {
 
   let filtered = invoices;
 
-  // Filter lagao
   if (currentFilter !== "all") {
     filtered = filtered.filter(inv => {
       if (currentFilter === "pending") return computeStatus(inv) === "pending";
@@ -454,7 +516,6 @@ function renderInvoices() {
     });
   }
 
-  // Search lagao
   if (searchQuery) {
     const q = searchQuery.toLowerCase();
     filtered = filtered.filter(inv =>
@@ -463,7 +524,6 @@ function renderInvoices() {
     );
   }
 
-  // Sort: overdue pehle, phir due date
   filtered.sort((a, b) => {
     const sa = computeStatus(a);
     const sb = computeStatus(b);
@@ -483,7 +543,6 @@ function renderInvoices() {
 
   emptyState.classList.add("hidden");
 
-  // Har invoice render karo
   filtered.forEach(inv => {
     const status = computeStatus(inv);
     const row = document.createElement("div");
@@ -523,13 +582,12 @@ function renderInvoices() {
 // ============================================
 async function renderUserMenu() {
   if (!currentUser || !userProfile) {
-    // Guest user
     document.getElementById("userAvatar").textContent = "GU";
     document.getElementById("userName").textContent = "Guest";
     document.getElementById("dropdownName").textContent = "Guest User";
     document.getElementById("dropdownEmail").textContent = "Not signed in";
     document.getElementById("dropdownPlan").textContent = "Free";
-    document.getElementById("dropdownUsage").textContent = "0 / 5";
+    document.getElementById("dropdownUsage").textContent = "0 credits";
     return;
   }
 
@@ -579,7 +637,6 @@ function attachEventListeners() {
   document.getElementById("cancelAdd").addEventListener("click", closeAddModal);
   document.getElementById("saveInvoice").addEventListener("click", saveNewInvoice);
 
-  // Deposit fields conditional show
   const fPaymentStructure = document.getElementById("fPaymentStructure");
   if (fPaymentStructure) {
     fPaymentStructure.addEventListener("change", (e) => {
@@ -592,7 +649,6 @@ function attachEventListeners() {
     });
   }
 
-  // Detail modal close
   document.getElementById("closeDetailModal").addEventListener("click", () => {
     document.getElementById("detailModal").classList.add("hidden");
   });
@@ -622,7 +678,6 @@ function attachEventListeners() {
     });
   });
 
-  // Search
   document.getElementById("searchInput").addEventListener("input", (e) => {
     searchQuery = e.target.value;
     renderInvoices();
@@ -658,7 +713,6 @@ function attachEventListeners() {
   document.getElementById("importConfirmBtn").addEventListener("click", confirmImport);
   document.getElementById("downloadSampleBtn").addEventListener("click", downloadSampleCSV);
 
-  // CSV drop zone
   const dropZone = document.getElementById("dropZone");
   const fileInput = document.getElementById("csvFileInput");
   dropZone.addEventListener("click", () => fileInput.click());
@@ -708,7 +762,6 @@ function attachEventListeners() {
   });
   document.getElementById("scanSaveBtn").addEventListener("click", saveScannedInvoice);
 
-  // Scan drop zone
   const scanDropZone = document.getElementById("scanDropZone");
   const scanFileInput = document.getElementById("scanFileInput");
   scanDropZone.addEventListener("click", () => scanFileInput.click());
@@ -755,7 +808,7 @@ function attachEventListeners() {
 }
 
 // ============================================
-// ADD INVOICE
+// ADD INVOICE — Free hai, koi credits nahi
 // ============================================
 function openAddModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
@@ -847,7 +900,6 @@ function openDetailModal(inv) {
 
   document.getElementById("detailTitle").textContent = `${inv.clientName} — ${formatAmount(inv.amount, inv.currency)}`;
 
-  // Timeline events
   const timeline = [];
   timeline.push({ date: inv.createdAt, text: "Invoice created", type: "done" });
 
@@ -865,7 +917,6 @@ function openDetailModal(inv) {
     timeline.push({ date: inv.lastTouchpoint, text: "Last contact", type: "done" });
   }
 
-  // Call logs
   if (inv.callLogs && inv.callLogs.length > 0) {
     inv.callLogs.forEach(log => {
       timeline.push({ date: log.date, text: `Call — ${log.outcome.replace(/_/g, " ")}${log.duration ? ` (${log.duration} min)` : ""}`, type: "done" });
@@ -1003,9 +1054,18 @@ Thanks,
 ${yourName}`;
 }
 
-function sendWhatsApp() {
+// ============================================
+// SEND WHATSAPP — Credits cost 3
+// ============================================
+async function sendWhatsApp() {
   const inv = invoices.find(i => i.id === activeInvoiceId);
   if (!inv) return;
+
+  // Credits check karo
+  if (!hasEnoughCredits()) {
+    showInsufficientCreditsMessage();
+    return;
+  }
 
   const message = document.getElementById("reminderMessage").value;
   const phone = (inv.clientPhone || "").replace(/[^0-9]/g, "");
@@ -1014,7 +1074,14 @@ function sendWhatsApp() {
     return;
   }
 
+  // WhatsApp kholo
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+
+  // Credits deduct karo
+  const creditResult = await deductTaskCredits("send_reminder", `WhatsApp reminder to ${inv.clientName}`);
+  if (!creditResult.success) {
+    console.warn("Credit deduction issue:", creditResult.error);
+  }
 
   inv.remindersSent = (inv.remindersSent || 0) + 1;
   inv.lastTouchpoint = todayISO();
@@ -1023,9 +1090,18 @@ function sendWhatsApp() {
   refreshAll();
 }
 
+// ============================================
+// SEND EMAIL — Credits cost 3
+// ============================================
 async function sendEmail() {
   const inv = invoices.find(i => i.id === activeInvoiceId);
   if (!inv) return;
+
+  // Credits check karo
+  if (!hasEnoughCredits()) {
+    showInsufficientCreditsMessage();
+    return;
+  }
 
   const message = document.getElementById("reminderMessage").value;
   const subject = inv.invoiceNumber ? `Invoice ${inv.invoiceNumber} — Follow-up` : `Invoice Follow-up`;
@@ -1039,6 +1115,12 @@ async function sendEmail() {
     window.location.href = mailto;
   } else {
     alert("Client email is missing. Message copied to clipboard — please send manually.");
+  }
+
+  // Credits deduct karo
+  const creditResult = await deductTaskCredits("send_reminder", `Email reminder to ${inv.clientName}`);
+  if (!creditResult.success) {
+    console.warn("Credit deduction issue:", creditResult.error);
   }
 
   inv.remindersSent = (inv.remindersSent || 0) + 1;
@@ -1058,7 +1140,7 @@ function copyMessage() {
 }
 
 // ============================================
-// MARK AS PAID
+// MARK AS PAID — Free hai
 // ============================================
 function markAsPaid(inv) {
   if (!confirm(`Mark payment received from ${inv.clientName}? Amount: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}`)) return;
@@ -1070,7 +1152,7 @@ function markAsPaid(inv) {
 }
 
 // ============================================
-// CALL LOG
+// CALL LOG — Free hai
 // ============================================
 function openCallLogModal(inv) {
   activeCallLogInvoiceId = inv.id;
@@ -1110,7 +1192,7 @@ function saveCallLog() {
 }
 
 // ============================================
-// CLIENT SAYS PAID
+// CLIENT SAYS PAID — Free hai
 // ============================================
 function markClientSaysPaid(inv) {
   if (!confirm(`Mark "${inv.clientName}" as "Client says paid"?\n\nYou'll be reminded to verify in 3 days.`)) return;
@@ -1148,7 +1230,7 @@ function confirmPaymentReceived() {
 }
 
 // ============================================
-// DEMAND LETTER
+// DEMAND LETTER — Credits cost 3 (agar bheja jaye)
 // ============================================
 function buildDemandLetter(inv) {
   const yourName = settings.yourName || "[Your Name]";
@@ -1256,9 +1338,15 @@ function downloadDemandLetterPDF() {
   printWindow.document.close();
 }
 
-function sendDemandLetterEmail() {
+async function sendDemandLetterEmail() {
   const inv = invoices.find(i => i.id === activeDemandLetterInvoiceId);
   if (!inv) return;
+
+  // Credits check karo
+  if (!hasEnoughCredits()) {
+    showInsufficientCreditsMessage();
+    return;
+  }
 
   const content = document.getElementById("demandLetterContent").value;
   const subject = `FINAL NOTICE: Overdue Invoice${inv.invoiceNumber ? " #" + inv.invoiceNumber : ""}`;
@@ -1273,6 +1361,12 @@ function sendDemandLetterEmail() {
   inv.lastTouchpoint = todayISO();
   saveInvoices();
 
+  // Credits deduct karo
+  const creditResult = await deductTaskCredits("demand_letter", `Demand letter for ${inv.clientName}`);
+  if (!creditResult.success) {
+    console.warn("Credit deduction issue:", creditResult.error);
+  }
+
   const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
   window.location.href = mailto;
 
@@ -1281,7 +1375,7 @@ function sendDemandLetterEmail() {
 }
 
 // ============================================
-// OCR SCAN INVOICE
+// OCR SCAN — Credits cost 3
 // ============================================
 function openScanModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
@@ -1306,6 +1400,12 @@ function closeScanModal() {
 }
 
 async function handleScanFile(file) {
+  // Credits check karo — 3 credits chahiye
+  if (!hasEnoughCredits()) {
+    showInsufficientCreditsMessage();
+    return;
+  }
+
   if (file.size > 5 * 1024 * 1024) {
     alert("File is too large. Please upload a file under 5MB.");
     return;
@@ -1336,6 +1436,12 @@ async function handleScanFile(file) {
 
       scanData = data.data;
       fillScanForm(scanData);
+
+      // Credits deduct karo — scan successful
+      const creditResult = await deductTaskCredits("scan_invoice", `Scanned invoice for ${data.data.clientName}`);
+      if (!creditResult.success) {
+        console.warn("Credit deduction issue:", creditResult.error);
+      }
 
       document.getElementById("scanStep1").classList.add("hidden");
       document.getElementById("scanStep2").classList.remove("hidden");
@@ -1413,7 +1519,7 @@ function saveScannedInvoice() {
 }
 
 // ============================================
-// GOOGLE SHEETS IMPORT
+// GOOGLE SHEETS IMPORT — Free hai
 // ============================================
 function openSheetModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
@@ -1500,7 +1606,7 @@ async function fetchGoogleSheet() {
 }
 
 // ============================================
-// SETTINGS
+// SETTINGS — Free hai
 // ============================================
 function openSettingsModal() {
   document.getElementById("sYourName").value = settings.yourName || "";
@@ -1566,7 +1672,7 @@ function exportToCSV() {
 }
 
 // ============================================
-// CSV IMPORT
+// CSV IMPORT — Free hai
 // ============================================
 function openImportModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
@@ -2007,7 +2113,7 @@ Gamma Ltd,+919876543212,gamma@example.com,INV-049,15000,INR,2026-09-20,Logo desi
 document.addEventListener("DOMContentLoaded", async () => {
   // Step 1: Auth check karo
   const authenticated = await checkAuthAndLoad();
-  if (!authenticated) return; // Already redirect ho gaya
+  if (!authenticated) return;
 
   // Step 2: localStorage data Supabase mein migrate karo
   await migrateLocalDataToSupabase();
