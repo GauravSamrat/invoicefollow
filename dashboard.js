@@ -11,32 +11,62 @@
 // - CSV import/export
 // - OCR invoice scanning (Gemini Vision)
 // - Google Sheets direct import
-// ============================================
-// ============================================
-// AUTH CHECK — Dashboard sirf logged-in users ke liye
+// - Supabase auth + multi-device sync
 // ============================================
 
-// Global user object
-let currentUser = null;
-let userProfile = null;
+// ============================================
+// AUTH STATE — Global variables
+// ============================================
+let currentUser = null;   // Supabase user object
+let userProfile = null;   // Users table ka row (credits, subscription)
 
-// Page load hote hi auth check karo
+// ============================================
+// APP STATE — Global variables
+// ============================================
+let invoices = [];              // Saare invoices (localStorage)
+let settings = {};              // User settings
+let currentFilter = "all";      // Filter (all/pending/overdue/paid)
+let searchQuery = "";           // Search input
+let activeInvoiceId = null;     // Currently open invoice
+let reminderMode = "whatsapp";  // Reminder channel
+
+// Advanced feature state
+let activeCallLogInvoiceId = null;
+let activeDemandLetterInvoiceId = null;
+let activePaymentConfirmInvoiceId = null;
+let scanData = null;            // OCR scan result
+
+// CSV import state
+let csvData = [];
+let csvHeaders = [];
+let columnMapping = {};
+let importStep = 1;
+let validInvoices = [];
+let invalidRows = [];
+
+// ---------- Constants ----------
+const STORAGE_INVOICES = "invoicefollow_invoices";
+const STORAGE_SETTINGS = "invoicefollow_settings";
+const FREE_LIMIT = 5; // Free plan mein max 5 invoices
+
+// ============================================
+// AUTH — Check karo user logged in hai ya nahi
+// ============================================
 async function checkAuthAndLoad() {
-  // Current user get karo
+  // Current user Supabase se lo
   currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    // User logged in nahi hai — login page pe bhejo
+    // Logged in nahi — login page pe bhejo
     window.location.href = "login.html";
     return false;
   }
 
-  // User profile get karo (credits, subscription info)
+  // User profile (credits, subscription) lo
   userProfile = await getUserProfile(currentUser.id);
 
   if (!userProfile) {
-    // Profile missing — Supabase mein kuch gadbad hai
-    console.error("User profile not found");
+    console.error("User profile not found in database");
     return false;
   }
 
@@ -45,27 +75,24 @@ async function checkAuthAndLoad() {
 
 // ============================================
 // MIGRATION — localStorage data ko Supabase mein bhejo
-// Yeh sirf pehli baar login pe chalega
+// Sirf pehli baar login pe chalega
 // ============================================
-
 async function migrateLocalDataToSupabase() {
   const MIGRATED_KEY = "invoicefollow_migrated_" + currentUser.id;
   const alreadyMigrated = localStorage.getItem(MIGRATED_KEY);
 
-  if (alreadyMigrated) {
-    return; // Pehle hi migrate ho chuka hai
-  }
+  if (alreadyMigrated) return; // Pehle hi migrate ho chuka
 
-  // localStorage se data lo
-  const localInvoices = JSON.parse(localStorage.getItem("invoicefollow_invoices") || "[]");
+  // localStorage se purane invoices lo
+  const localInvoices = JSON.parse(localStorage.getItem(STORAGE_INVOICES) || "[]");
 
   if (localInvoices.length === 0) {
-    // Kuch migrate karne ko nahi hai
+    // Kuch nahi migrate karna
     localStorage.setItem(MIGRATED_KEY, "true");
     return;
   }
 
-  // Confirm karo user se
+  // User se confirm karo
   const shouldMigrate = confirm(
     `We found ${localInvoices.length} invoice${localInvoices.length > 1 ? "s" : ""} in this browser. Import to your account?`
   );
@@ -75,7 +102,7 @@ async function migrateLocalDataToSupabase() {
     return;
   }
 
-  // Supabase mein bulk insert
+  // Supabase mein bulk insert karo
   try {
     const invoicesToInsert = localInvoices.map((inv) => ({
       user_id: currentUser.id,
@@ -102,9 +129,7 @@ async function migrateLocalDataToSupabase() {
       paid_at: inv.paidAt || null,
     }));
 
-    const { error } = await window.supabaseClient
-      .from("invoices")
-      .insert(invoicesToInsert);
+    const { error } = await window.supabaseClient.from("invoices").insert(invoicesToInsert);
 
     if (error) {
       console.error("Migration error:", error);
@@ -112,7 +137,6 @@ async function migrateLocalDataToSupabase() {
       return;
     }
 
-    // Success — flag set karo
     localStorage.setItem(MIGRATED_KEY, "true");
     alert(`${invoicesToInsert.length} invoice${invoicesToInsert.length > 1 ? "s" : ""} imported to your account.`);
   } catch (err) {
@@ -120,64 +144,14 @@ async function migrateLocalDataToSupabase() {
   }
 }
 
-
-
-// ---------- Constants ----------
-const STORAGE_INVOICES = "invoicefollow_invoices";
-const STORAGE_SETTINGS = "invoicefollow_settings";
-const STORAGE_PRO = "invoicefollow_pro";
-const FREE_LIMIT = 5; // Free plan mein max 5 invoices
-
-// ---------- App State ----------
-let invoices = [];              // Saare invoices
-let settings = {};              // User settings
-let currentFilter = "all";      // Current filter (all/pending/overdue/paid)
-let searchQuery = "";           // Search query
-let activeInvoiceId = null;     // Currently active invoice (for modals)
-let reminderMode = "whatsapp";  // Reminder channel
-
-// Advanced features state
-let activeCallLogInvoiceId = null;         // Call log modal ke liye
-let activeDemandLetterInvoiceId = null;    // Demand letter modal ke liye
-let activePaymentConfirmInvoiceId = null;  // Payment confirm modal ke liye
-let scanData = null;                        // OCR scan result
-
-// CSV Import state
-let csvData = [];            // Parsed CSV rows
-let csvHeaders = [];         // CSV column names
-let columnMapping = {};      // Field → CSV column mapping
-let importStep = 1;          // Current import step (1/2/3)
-let validInvoices = [];      // Validated invoices ready to import
-let invalidRows = [];        // Rows with validation errors
-
 // ============================================
-// INITIALIZATION
+// DATA — Load aur Save
 // ============================================
-
-document.addEventListener("DOMContentLoaded", async () => {
-  // Pehle auth check karo
-  const authenticated = await checkAuthAndLoad();
-  if (!authenticated) return; // Redirect ho gaya, kuch mat karo
-
-  // Migration check karo
-  await migrateLocalDataToSupabase();
-
-  // Ab normal load karo
-  loadData();
-  updateGreeting();
-  renderStats();
-  renderTodayActions();
-  renderInvoices();
-  renderUserMenu();
-  attachEventListeners();
-});
-
-// localStorage se data load karo
 function loadData() {
   invoices = JSON.parse(localStorage.getItem(STORAGE_INVOICES) || "[]");
   settings = JSON.parse(localStorage.getItem(STORAGE_SETTINGS) || "{}");
 
-  // Default settings agar missing hain
+  // Default settings agar missing
   if (!settings.yourName) settings.yourName = "";
   if (!settings.yourEmail) settings.yourEmail = "";
   if (!settings.yourPhone) settings.yourPhone = "";
@@ -188,56 +162,55 @@ function loadData() {
   if (!settings.automation) settings.automation = "guided";
 }
 
-// Invoices save karo
 function saveInvoices() {
   localStorage.setItem(STORAGE_INVOICES, JSON.stringify(invoices));
 }
 
-// Settings save karo
 function saveSettings() {
   localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings));
 }
 
-// Pro status check karo
+// Pro status check karo — Supabase se
 function isPro() {
-  return localStorage.getItem(STORAGE_PRO) === "true";
+  if (!userProfile) return false;
+  return userProfile.subscription === "pro";
 }
 
 // ============================================
 // HELPERS
 // ============================================
 
-// Currency symbol nikaalo
+// Currency symbol
 function getCurrencySymbol(code) {
   return { INR: "₹", USD: "$", EUR: "€" }[code] || "₹";
 }
 
-// Amount ko format karo (₹25,000)
+// Amount format karo (₹25,000)
 function formatAmount(amount, currency) {
   const symbol = getCurrencySymbol(currency || settings.currency);
   return symbol + Number(amount || 0).toLocaleString("en-IN");
 }
 
-// Date ko readable format mein (15 Sep 2026)
+// Date ko readable banao (15 Sep 2026)
 function formatDate(isoDate) {
   if (!isoDate) return "—";
   const d = new Date(isoDate);
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// Aaj ki date ISO format mein
+// Aaj ki date ISO mein
 function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-// Do dates ke beech ka difference (din mein)
+// Do dates ka difference (din mein)
 function daysDiff(fromISO, toISO) {
   const from = new Date(fromISO);
   const to = new Date(toISO);
   return Math.floor((to - from) / (1000 * 60 * 60 * 24));
 }
 
-// HTML escape — XSS se bachne ke liye
+// HTML escape — XSS protection
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)
@@ -248,22 +221,22 @@ function escapeHtml(str) {
     .replace(/'/g, "&#039;");
 }
 
-// ---------- Late Fee Calculator ----------
+// ============================================
+// LATE FEE CALCULATOR
+// ============================================
 function calculateLateFee(inv) {
-  // Agar late fee config nahi hai toh 0
   if (!inv.lateFeeType || !inv.lateFeeValue || !inv.dueDate) return 0;
-  if (inv.status === "paid") return 0; // Paid ho gaya toh late fee nahi
+  if (inv.status === "paid") return 0;
 
   const today = todayISO();
-  if (inv.dueDate >= today) return 0; // Abhi due date aayi nahi
+  if (inv.dueDate >= today) return 0;
 
   const days = daysDiff(inv.dueDate, today);
   if (days <= 0) return 0;
 
-  const weeks = Math.floor(days / 7);      // Kitne weeks overdue
-  const months = Math.floor(days / 30);    // Kitne months overdue
+  const weeks = Math.floor(days / 7);
+  const months = Math.floor(days / 30);
 
-  // Late fee type ke hisaab se calculate karo
   switch (inv.lateFeeType) {
     case "percent_month":
       return (inv.amount * inv.lateFeeValue / 100) * Math.max(1, months);
@@ -278,12 +251,14 @@ function calculateLateFee(inv) {
   }
 }
 
-// Total with late fee
+// Total = amount + late fee
 function getTotalWithLateFee(inv) {
   return Number(inv.amount || 0) + calculateLateFee(inv);
 }
 
-// ---------- Status Calculation ----------
+// ============================================
+// STATUS CALCULATION
+// ============================================
 function computeStatus(inv) {
   if (inv.status === "paid") return "paid";
   if (inv.status === "client_says_paid") return "client_says_paid";
@@ -325,7 +300,6 @@ function isActionDueToday(inv) {
 // ============================================
 // GREETING
 // ============================================
-
 function updateGreeting() {
   const hour = new Date().getHours();
   let greet = "Good morning";
@@ -347,31 +321,25 @@ function updateGreeting() {
 // ============================================
 // STATS
 // ============================================
-
 function renderStats() {
-  // Total outstanding (paid nahi hua)
   const total = invoices
     .filter(inv => inv.status !== "paid")
     .reduce((sum, inv) => sum + getTotalWithLateFee(inv), 0);
 
-  // Overdue amount
   const overdue = invoices
     .filter(inv => computeStatus(inv) === "overdue")
     .reduce((sum, inv) => sum + getTotalWithLateFee(inv), 0);
 
-  // Is mahine paid
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
   const paidThisMonth = invoices
     .filter(inv => inv.status === "paid" && inv.paidAt && inv.paidAt >= monthStart)
     .reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
 
-  // Counts
   const pendingCount = invoices.filter(inv => inv.status !== "paid").length;
   const overdueCount = invoices.filter(inv => computeStatus(inv) === "overdue").length;
   const paidCount = invoices.filter(inv => inv.status === "paid" && inv.paidAt && inv.paidAt >= monthStart).length;
 
-  // UI update
   document.getElementById("statTotal").textContent = formatAmount(total);
   document.getElementById("statTotalSub").textContent = `${pendingCount} invoice${pendingCount !== 1 ? "s" : ""}`;
   document.getElementById("statOverdue").textContent = formatAmount(overdue);
@@ -383,7 +351,6 @@ function renderStats() {
 // ============================================
 // TODAY'S ACTIONS
 // ============================================
-
 function renderTodayActions() {
   const container = document.getElementById("todayActions");
   const allClear = document.getElementById("allClear");
@@ -418,7 +385,7 @@ function renderTodayActions() {
     container.appendChild(banner);
   });
 
-  // Agar koi action nahi
+  // Koi action nahi toh all clear
   if (actions.length === 0) {
     if (toConfirm.length === 0) {
       allClear.classList.remove("hidden");
@@ -469,9 +436,8 @@ function renderTodayActions() {
 }
 
 // ============================================
-// ALL INVOICES
+// ALL INVOICES LIST
 // ============================================
-
 function renderInvoices() {
   const container = document.getElementById("invoiceList");
   const emptyState = document.getElementById("emptyState");
@@ -510,7 +476,6 @@ function renderInvoices() {
 
   container.innerHTML = "";
 
-  // Agar kuch nahi mila
   if (filtered.length === 0) {
     emptyState.classList.remove("hidden");
     return;
@@ -528,7 +493,6 @@ function renderInvoices() {
     const lateFee = calculateLateFee(inv);
     const lateFeeLine = lateFee > 0 ? `<div class="late-fee-amount">+ ${formatAmount(lateFee, inv.currency)} late fee</div>` : "";
 
-    // Deposit badge
     let depositBadge = "";
     if (inv.depositAmount > 0) {
       depositBadge = `<span class="deposit-info ${inv.depositReceived ? "" : "deposit-pending"}">${inv.depositReceived ? "Deposit paid" : "Deposit pending"}</span>`;
@@ -555,11 +519,61 @@ function renderInvoices() {
 }
 
 // ============================================
+// USER MENU — Supabase data se populate
+// ============================================
+async function renderUserMenu() {
+  if (!currentUser || !userProfile) {
+    // Guest user
+    document.getElementById("userAvatar").textContent = "GU";
+    document.getElementById("userName").textContent = "Guest";
+    document.getElementById("dropdownName").textContent = "Guest User";
+    document.getElementById("dropdownEmail").textContent = "Not signed in";
+    document.getElementById("dropdownPlan").textContent = "Free";
+    document.getElementById("dropdownUsage").textContent = "0 / 5";
+    return;
+  }
+
+  const name = userProfile.full_name || "User";
+  const email = userProfile.email || "—";
+  const credits = userProfile.credits || 0;
+  const subscription = userProfile.subscription || "free";
+
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+
+  document.getElementById("userAvatar").textContent = initials;
+  document.getElementById("userName").textContent = name.split(" ")[0] || "Account";
+  document.getElementById("dropdownName").textContent = name;
+  document.getElementById("dropdownEmail").textContent = email;
+  document.getElementById("dropdownPlan").textContent = subscription === "pro" ? "Pro" : "Free";
+
+  if (subscription === "pro") {
+    document.getElementById("dropdownUsage").textContent = "Unlimited";
+  } else {
+    document.getElementById("dropdownUsage").textContent = `${credits} credits`;
+  }
+}
+
+// ============================================
+// REFRESH ALL
+// ============================================
+async function refreshAll() {
+  await renderUserMenu();
+  updateGreeting();
+  renderStats();
+  renderTodayActions();
+  renderInvoices();
+}
+
+// ============================================
 // EVENT LISTENERS
 // ============================================
-
 function attachEventListeners() {
-  // ---------- Add Invoice ----------
+  // Add Invoice
   document.getElementById("addInvoiceBtn").addEventListener("click", openAddModal);
   document.getElementById("closeAddModal").addEventListener("click", closeAddModal);
   document.getElementById("cancelAdd").addEventListener("click", closeAddModal);
@@ -578,19 +592,19 @@ function attachEventListeners() {
     });
   }
 
-  // ---------- Detail Modal ----------
+  // Detail modal close
   document.getElementById("closeDetailModal").addEventListener("click", () => {
     document.getElementById("detailModal").classList.add("hidden");
   });
 
-  // ---------- Settings ----------
+  // Settings
   document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
   document.getElementById("closeSettingsModal").addEventListener("click", closeSettingsModal);
   document.getElementById("cancelSettings").addEventListener("click", closeSettingsModal);
   document.getElementById("saveSettings").addEventListener("click", saveSettingsFromModal);
   document.getElementById("exportCsvBtn").addEventListener("click", exportToCSV);
 
-  // ---------- Reminder Modal ----------
+  // Reminder modal
   document.getElementById("closeReminderModal").addEventListener("click", () => {
     document.getElementById("reminderModal").classList.add("hidden");
   });
@@ -598,7 +612,7 @@ function attachEventListeners() {
   document.getElementById("sendEmailBtn").addEventListener("click", sendEmail);
   document.getElementById("copyMessageBtn").addEventListener("click", copyMessage);
 
-  // ---------- Filter buttons ----------
+  // Filter buttons
   document.querySelectorAll(".filter-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
@@ -608,13 +622,13 @@ function attachEventListeners() {
     });
   });
 
-  // ---------- Search ----------
+  // Search
   document.getElementById("searchInput").addEventListener("input", (e) => {
     searchQuery = e.target.value;
     renderInvoices();
   });
 
-  // ---------- User Menu ----------
+  // User menu dropdown
   document.getElementById("userMenuBtn").addEventListener("click", (e) => {
     e.stopPropagation();
     document.getElementById("userDropdown").classList.toggle("hidden");
@@ -628,14 +642,14 @@ function attachEventListeners() {
     }
   });
 
-  // ---------- Sign out ----------
+  // Sign out
   document.getElementById("signOutBtn").addEventListener("click", async () => {
-  if (confirm("Sign out? Your data will sync next time you log in.")) {
-    await logout(); // auth.js se function
-  }
-});
+    if (confirm("Sign out? Your data will sync next time you log in.")) {
+      await logout();
+    }
+  });
 
-  // ---------- CSV Import ----------
+  // CSV Import
   document.getElementById("importCsvBtn").addEventListener("click", openImportModal);
   document.getElementById("closeImportModal").addEventListener("click", closeImportModal);
   document.getElementById("cancelImport").addEventListener("click", closeImportModal);
@@ -652,9 +666,7 @@ function attachEventListeners() {
     e.preventDefault();
     dropZone.classList.add("dragover");
   });
-  dropZone.addEventListener("dragleave", () => {
-    dropZone.classList.remove("dragover");
-  });
+  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
   dropZone.addEventListener("drop", (e) => {
     e.preventDefault();
     dropZone.classList.remove("dragover");
@@ -666,28 +678,27 @@ function attachEventListeners() {
     if (file) handleCSVFile(file);
   });
 
-  // ---------- Call Log Modal ----------
+  // Call Log modal
   document.getElementById("closeCallLogModal").addEventListener("click", closeCallLogModal);
   document.getElementById("cancelCallLog").addEventListener("click", closeCallLogModal);
   document.getElementById("saveCallLog").addEventListener("click", saveCallLog);
 
-  // ---------- Demand Letter Modal ----------
+  // Demand Letter modal
   document.getElementById("closeDemandLetterModal").addEventListener("click", closeDemandLetterModal);
   document.getElementById("copyDemandLetterBtn").addEventListener("click", copyDemandLetter);
   document.getElementById("downloadDemandLetterBtn").addEventListener("click", downloadDemandLetterPDF);
   document.getElementById("sendDemandEmailBtn").addEventListener("click", sendDemandLetterEmail);
 
-  // ---------- Payment Confirm Modal ----------
+  // Payment Confirm modal
   document.getElementById("closePaymentConfirmModal").addEventListener("click", closePaymentConfirmModal);
   document.getElementById("cancelPaymentConfirm").addEventListener("click", closePaymentConfirmModal);
   document.getElementById("confirmPaymentBtn").addEventListener("click", confirmPaymentReceived);
 
-  // ---------- OCR Scan Modal ----------
+  // OCR Scan modal
   document.getElementById("scanInvoiceBtn").addEventListener("click", openScanModal);
   document.getElementById("closeScanModal").addEventListener("click", closeScanModal);
   document.getElementById("cancelScan").addEventListener("click", closeScanModal);
   document.getElementById("scanBackBtn").addEventListener("click", () => {
-    // Wapas step 1 pe jao
     document.getElementById("scanStep1").classList.remove("hidden");
     document.getElementById("scanStep2").classList.add("hidden");
     document.getElementById("scanSaveBtn").classList.add("hidden");
@@ -705,9 +716,7 @@ function attachEventListeners() {
     e.preventDefault();
     scanDropZone.classList.add("dragover");
   });
-  scanDropZone.addEventListener("dragleave", () => {
-    scanDropZone.classList.remove("dragover");
-  });
+  scanDropZone.addEventListener("dragleave", () => scanDropZone.classList.remove("dragover"));
   scanDropZone.addEventListener("drop", (e) => {
     e.preventDefault();
     scanDropZone.classList.remove("dragover");
@@ -719,13 +728,13 @@ function attachEventListeners() {
     if (file) handleScanFile(file);
   });
 
-  // ---------- Google Sheets Import ----------
+  // Google Sheets
   document.getElementById("importSheetBtn").addEventListener("click", openSheetModal);
   document.getElementById("closeSheetModal").addEventListener("click", closeSheetModal);
   document.getElementById("cancelSheet").addEventListener("click", closeSheetModal);
   document.getElementById("sheetFetchBtn").addEventListener("click", fetchGoogleSheet);
 
-  // ---------- Delegated events (invoice actions) ----------
+  // Delegated events (invoice actions)
   document.addEventListener("click", (e) => {
     const action = e.target.dataset.action;
     const id = e.target.dataset.id;
@@ -748,15 +757,12 @@ function attachEventListeners() {
 // ============================================
 // ADD INVOICE
 // ============================================
-
 function openAddModal() {
-  // Free limit check
   if (!isPro() && invoices.length >= FREE_LIMIT) {
     alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
     return;
   }
 
-  // Form clear karo
   ["fClientName", "fClientPhone", "fClientEmail", "fInvoiceNumber", "fAmount", "fDueDate", "fPromiseDate", "fWork", "fNotes", "fLateFeeValue", "fDepositAmount"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
@@ -775,7 +781,6 @@ function closeAddModal() {
 }
 
 function saveNewInvoice() {
-  // Form values lo
   const clientName = document.getElementById("fClientName").value.trim();
   const clientPhone = document.getElementById("fClientPhone").value.trim();
   const clientEmail = document.getElementById("fClientEmail").value.trim();
@@ -787,20 +792,17 @@ function saveNewInvoice() {
   const work = document.getElementById("fWork").value.trim();
   const notes = document.getElementById("fNotes").value.trim();
 
-  // Advanced fields
   const lateFeeType = document.getElementById("fLateFeeType").value;
   const lateFeeValue = parseFloat(document.getElementById("fLateFeeValue").value) || 0;
   const paymentStructure = document.getElementById("fPaymentStructure").value;
   const depositAmount = parseFloat(document.getElementById("fDepositAmount").value) || 0;
   const depositReceived = document.getElementById("fDepositReceived").value === "yes";
 
-  // Validation
   if (!clientName || !clientPhone || !amount || !dueDate) {
     alert("Client name, phone, amount, and due date are required.");
     return;
   }
 
-  // Naya invoice object
   const newInvoice = {
     id: "inv_" + Date.now(),
     clientName,
@@ -837,7 +839,6 @@ function saveNewInvoice() {
 // ============================================
 // DETAIL MODAL
 // ============================================
-
 function openDetailModal(inv) {
   activeInvoiceId = inv.id;
   const modal = document.getElementById("detailModal");
@@ -846,7 +847,7 @@ function openDetailModal(inv) {
 
   document.getElementById("detailTitle").textContent = `${inv.clientName} — ${formatAmount(inv.amount, inv.currency)}`;
 
-  // Timeline events build karo
+  // Timeline events
   const timeline = [];
   timeline.push({ date: inv.createdAt, text: "Invoice created", type: "done" });
 
@@ -864,7 +865,7 @@ function openDetailModal(inv) {
     timeline.push({ date: inv.lastTouchpoint, text: "Last contact", type: "done" });
   }
 
-  // Call logs timeline mein add karo
+  // Call logs
   if (inv.callLogs && inv.callLogs.length > 0) {
     inv.callLogs.forEach(log => {
       timeline.push({ date: log.date, text: `Call — ${log.outcome.replace(/_/g, " ")}${log.duration ? ` (${log.duration} min)` : ""}`, type: "done" });
@@ -886,12 +887,10 @@ function openDetailModal(inv) {
     if (nextFU) timeline.push({ date: nextFU, text: "Next follow-up", type: "" });
   }
 
-  // Sort timeline by date
   timeline.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 
   const lateFee = calculateLateFee(inv);
 
-  // Detail HTML render karo
   body.innerHTML = `
     <div class="detail-section">
       <h4>Details</h4>
@@ -942,7 +941,6 @@ function openDetailModal(inv) {
     </div>
   `;
 
-  // Delete button listener
   document.getElementById("deleteInvoiceBtn").addEventListener("click", () => {
     if (confirm("Delete this invoice? This cannot be undone.")) {
       invoices = invoices.filter(i => i.id !== inv.id);
@@ -958,7 +956,6 @@ function openDetailModal(inv) {
 // ============================================
 // REMINDER MODAL
 // ============================================
-
 function openReminderModal(inv, mode) {
   activeInvoiceId = inv.id;
   reminderMode = mode;
@@ -978,7 +975,6 @@ function buildReminderMessage(inv) {
   const invNum = inv.invoiceNumber ? ` #${inv.invoiceNumber}` : "";
   const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
 
-  // Escalating message based on overdue days
   let opening = `Just circling back on invoice${invNum} for ${amount} — it was due on ${formatDate(inv.dueDate)}.`;
   if (overdueDays >= 7) {
     opening = `Following up again on invoice${invNum} for ${amount}, which was due on ${formatDate(inv.dueDate)}. It's now ${overdueDays} days past due.`;
@@ -987,14 +983,12 @@ function buildReminderMessage(inv) {
     opening = `Invoice${invNum} for ${amount} is now ${overdueDays} days overdue. I haven't heard back from my previous emails.`;
   }
 
-  // Late fee mention
   const lateFee = calculateLateFee(inv);
   let lateFeeLine = "";
   if (lateFee > 0) {
     lateFeeLine = `\n\nAs per our agreement, a late fee of ${formatAmount(lateFee, inv.currency)} has accrued. Total due: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}.`;
   }
 
-  // Closer message
   const closer = overdueDays >= 14
     ? "If I don't receive payment or a clear plan by this Friday, I'll need to pause future work. I'd rather avoid that — let me know how you'd like to proceed."
     : "Could you confirm a payment date? If there's an issue, let me know so we can sort it out.";
@@ -1020,11 +1014,8 @@ function sendWhatsApp() {
     return;
   }
 
-  // WhatsApp URL banao
-  const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-  window.open(url, "_blank");
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
 
-  // Reminders count + last touchpoint update
   inv.remindersSent = (inv.remindersSent || 0) + 1;
   inv.lastTouchpoint = todayISO();
   saveInvoices();
@@ -1039,12 +1030,10 @@ async function sendEmail() {
   const message = document.getElementById("reminderMessage").value;
   const subject = inv.invoiceNumber ? `Invoice ${inv.invoiceNumber} — Follow-up` : `Invoice Follow-up`;
 
-  // Clipboard pe copy karo (backup)
   try {
     await navigator.clipboard.writeText(message);
   } catch (e) {}
 
-  // Mailto link kholo
   if (inv.clientEmail) {
     const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
     window.location.href = mailto;
@@ -1071,7 +1060,6 @@ function copyMessage() {
 // ============================================
 // MARK AS PAID
 // ============================================
-
 function markAsPaid(inv) {
   if (!confirm(`Mark payment received from ${inv.clientName}? Amount: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}`)) return;
   inv.status = "paid";
@@ -1084,7 +1072,6 @@ function markAsPaid(inv) {
 // ============================================
 // CALL LOG
 // ============================================
-
 function openCallLogModal(inv) {
   activeCallLogInvoiceId = inv.id;
   document.getElementById("callDate").value = todayISO();
@@ -1115,14 +1102,7 @@ function saveCallLog() {
 
   if (!inv.callLogs) inv.callLogs = [];
 
-  inv.callLogs.push({
-    date,
-    duration,
-    outcome,
-    notes,
-    loggedAt: new Date().toISOString()
-  });
-
+  inv.callLogs.push({ date, duration, outcome, notes, loggedAt: new Date().toISOString() });
   inv.lastTouchpoint = date;
   saveInvoices();
   closeCallLogModal();
@@ -1132,7 +1112,6 @@ function saveCallLog() {
 // ============================================
 // CLIENT SAYS PAID
 // ============================================
-
 function markClientSaysPaid(inv) {
   if (!confirm(`Mark "${inv.clientName}" as "Client says paid"?\n\nYou'll be reminded to verify in 3 days.`)) return;
 
@@ -1171,7 +1150,6 @@ function confirmPaymentReceived() {
 // ============================================
 // DEMAND LETTER
 // ============================================
-
 function buildDemandLetter(inv) {
   const yourName = settings.yourName || "[Your Name]";
   const totalDue = getTotalWithLateFee(inv);
@@ -1305,7 +1283,6 @@ function sendDemandLetterEmail() {
 // ============================================
 // OCR SCAN INVOICE
 // ============================================
-
 function openScanModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
     alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
@@ -1329,7 +1306,6 @@ function closeScanModal() {
 }
 
 async function handleScanFile(file) {
-  // File size check
   if (file.size > 5 * 1024 * 1024) {
     alert("File is too large. Please upload a file under 5MB.");
     return;
@@ -1338,7 +1314,6 @@ async function handleScanFile(file) {
   const statusEl = document.getElementById("scanStatus");
   statusEl.textContent = "Uploading and scanning... This may take 10-20 seconds.";
 
-  // File ko base64 mein convert karo
   const reader = new FileReader();
   reader.onload = async (e) => {
     const base64 = e.target.result.split(",")[1];
@@ -1440,7 +1415,6 @@ function saveScannedInvoice() {
 // ============================================
 // GOOGLE SHEETS IMPORT
 // ============================================
-
 function openSheetModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
     alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
@@ -1487,7 +1461,6 @@ async function fetchGoogleSheet() {
       return;
     }
 
-    // CSV parse karo
     Papa.parse(data.csv, {
       header: true,
       skipEmptyLines: true,
@@ -1502,16 +1475,13 @@ async function fetchGoogleSheet() {
           return;
         }
 
-        // Sheet data ko import flow mein daalo
         csvData = results.data;
         csvHeaders = results.meta.fields || [];
         columnMapping = {};
         autoMapColumns();
 
-        // Sheet modal band karo
         closeSheetModal();
 
-        // Import modal step 2 pe kholo
         document.getElementById("importStep1").classList.add("hidden");
         document.getElementById("importStep2").classList.remove("hidden");
         document.getElementById("importStep3").classList.add("hidden");
@@ -1532,7 +1502,6 @@ async function fetchGoogleSheet() {
 // ============================================
 // SETTINGS
 // ============================================
-
 function openSettingsModal() {
   document.getElementById("sYourName").value = settings.yourName || "";
   document.getElementById("sYourEmail").value = settings.yourEmail || "";
@@ -1597,37 +1566,8 @@ function exportToCSV() {
 }
 
 // ============================================
-// USER MENU
-// ============================================
-
-function renderUserMenu() {
-  const name = settings.yourName || "Guest User";
-  const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-
-  document.getElementById("userAvatar").textContent = initials;
-  document.getElementById("userName").textContent = name.split(" ")[0] || "Account";
-  document.getElementById("dropdownName").textContent = name;
-  document.getElementById("dropdownEmail").textContent = settings.yourEmail || "—";
-  document.getElementById("dropdownPlan").textContent = isPro() ? "Pro" : "Free";
-  document.getElementById("dropdownUsage").textContent = isPro() ? "Unlimited" : `${invoices.length} / ${FREE_LIMIT}`;
-}
-
-// ============================================
-// REFRESH ALL
-// ============================================
-
-function refreshAll() {
-  updateGreeting();
-  renderStats();
-  renderTodayActions();
-  renderInvoices();
-  renderUserMenu();
-}
-
-// ============================================
 // CSV IMPORT
 // ============================================
-
 function openImportModal() {
   if (!isPro() && invoices.length >= FREE_LIMIT) {
     alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
@@ -1805,7 +1745,6 @@ function parseDate(str) {
 
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
-  // DD/MM/YYYY ya DD-MM-YYYY
   let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
   if (m) {
     let day = m[1].padStart(2, "0");
@@ -1815,13 +1754,11 @@ function parseDate(str) {
     return `${year}-${month}-${day}`;
   }
 
-  // YYYY/MM/DD
   m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
   if (m) {
     return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
   }
 
-  // Native Date
   const d = new Date(str);
   if (!isNaN(d.getTime())) {
     return d.toISOString().split("T")[0];
@@ -1954,7 +1891,6 @@ function renderPreviewUI() {
   html += "</tbody>";
   table.innerHTML = html;
 
-  // Errors list
   const errBox = document.getElementById("invalidErrors");
   if (invalidRows.length > 0) {
     errBox.classList.remove("hidden");
@@ -2063,3 +1999,25 @@ Gamma Ltd,+919876543212,gamma@example.com,INV-049,15000,INR,2026-09-20,Logo desi
   a.click();
   URL.revokeObjectURL(url);
 }
+
+// ============================================
+// PAGE LOAD — Auth check, migrate, load
+// Yeh sabse aakhir mein chalega jab page load ho
+// ============================================
+document.addEventListener("DOMContentLoaded", async () => {
+  // Step 1: Auth check karo
+  const authenticated = await checkAuthAndLoad();
+  if (!authenticated) return; // Already redirect ho gaya
+
+  // Step 2: localStorage data Supabase mein migrate karo
+  await migrateLocalDataToSupabase();
+
+  // Step 3: Data load aur UI render karo
+  loadData();
+  updateGreeting();
+  renderStats();
+  renderTodayActions();
+  renderInvoices();
+  await renderUserMenu();
+  attachEventListeners();
+});
