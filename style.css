@@ -1313,3 +1313,29 @@ footer {
     padding: 0.4rem;
   }
 }
+
+
+/* ============ ICON REFINEMENTS (Landing) ============ */
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.btn-arrow {
+  display: inline-block;
+  margin-left: 0.4rem;
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.btn-primary:hover .btn-arrow {
+  transform: translateX(3px);
+}

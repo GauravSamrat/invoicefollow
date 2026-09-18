@@ -944,3 +944,333 @@
     display: none;
   }
 }
+
+/* ============================================
+   SVG ICON REFINEMENTS
+   ============================================ */
+
+/* Empty state icon */
+.empty-icon {
+  color: var(--text-subtle);
+  margin-bottom: 1rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.empty-state svg.empty-icon {
+  opacity: 0.6;
+}
+
+/* All clear icon (SVG version) */
+.all-clear-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--success);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Button arrow (nav/CTA buttons) */
+.btn-arrow {
+  margin-left: 0.4rem;
+  transition: transform 0.15s ease;
+  vertical-align: middle;
+}
+
+.btn-primary:hover .btn-arrow {
+  transform: translateX(3px);
+}
+
+.btn-large .btn-arrow {
+  margin-left: 0.5rem;
+}
+
+/* Feature icon container — landing page */
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+/* Drop zone icon sizing */
+.drop-zone svg {
+  color: var(--text-subtle);
+  margin-bottom: 0.75rem;
+}
+
+/* ============================================
+   ADVANCED FEATURES STYLES
+   ============================================ */
+
+/* Danger button — soft red */
+.btn-danger-soft {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger-soft:hover {
+  background: var(--danger);
+  color: white;
+}
+
+.btn-danger {
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+/* Late fee badge */
+.late-fee-badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-size: 0.7rem;
+  font-weight: 700;
+  border-radius: 4px;
+  letter-spacing: 0.02em;
+}
+
+.late-fee-amount {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+
+/* New status badges */
+.status-client_says_paid {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.status-deposit_pending {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+/* Demand letter textarea */
+.demand-letter-textarea {
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 0.82rem;
+  line-height: 1.7;
+  min-height: 400px;
+}
+
+/* Payment confirm info */
+.payment-confirm-info {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.25rem;
+}
+
+.payment-confirm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 0.88rem;
+}
+
+.payment-confirm-row:last-child {
+  border-bottom: none;
+}
+
+.payment-confirm-label {
+  color: var(--text-muted);
+}
+
+.payment-confirm-value {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Deposit badge */
+.deposit-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.68rem;
+  font-weight: 600;
+  border-radius: 6px;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+}
+
+.deposit-pending {
+  background: #fce7f3;
+  color: #9d174d;
+}
+
+/* Confirm banner */
+.confirm-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--radius);
+  margin-bottom: 0.75rem;
+}
+
+.confirm-banner-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #3b82f6;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.confirm-banner-text {
+  flex: 1;
+  font-size: 0.88rem;
+  color: #1e40af;
+}
+
+.confirm-banner-text strong {
+  font-weight: 700;
+}
+
+/* ============================================
+   OCR SCAN + SHEETS IMPORT STYLES
+   ============================================ */
+
+/* Scan modal — wider */
+.modal-wide {
+  max-width: 620px;
+}
+
+/* Scan step status text */
+#importStatus,
+#scanStatus,
+#sheetStatus {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  min-height: 1.4rem;
+}
+
+/* Camera drop zone — slightly different from CSV */
+#scanDropZone {
+  padding: 3rem 1.5rem;
+  background: linear-gradient(180deg, var(--bg) 0%, #ffffff 100%);
+}
+
+#scanDropZone svg {
+  color: var(--accent);
+  opacity: 0.8;
+}
+
+/* Import button group — 3 buttons fit */
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.button-group .btn-ghost,
+.button-group .btn-primary {
+  font-size: 0.85rem;
+  padding: 0.55rem 0.95rem;
+}
+
+/* Mobile responsive — buttons stack */
+@media (max-width: 900px) {
+  .button-group {
+    width: 100%;
+  }
+  .button-group button {
+    flex: 1;
+    min-width: 0;
+  }
+  .button-group .btn-ghost svg,
+  .button-group .btn-primary svg {
+    display: none;
+  }
+}
+
+/* Sheet URL input */
+#sheetUrlInput {
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 0.85rem;
+}
+
+/* Scanned invoice form — same styling as add form */
+#scanStep2 .form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+#scanStep2 label {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+#scanStep2 label > span {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 500;
+  margin-bottom: 0.35rem;
+}
+
+#scanStep2 input,
+#scanStep2 select {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: white;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.15s;
+}
+
+#scanStep2 input:focus,
+#scanStep2 select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+@media (max-width: 640px) {
+  #scanStep2 .form-row {
+    grid-template-columns: 1fr;
+  }
+}
