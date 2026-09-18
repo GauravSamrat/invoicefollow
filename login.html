@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in — InvoiceFollow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="auth.css" />
+</head>
+<body class="auth-body">
+
+  <div class="auth-container">
+
+    <a href="index.html" class="auth-logo">
+      <svg width="32" height="32" viewBox="0 0 28 28" fill="none">
+        <rect width="28" height="28" rx="7" fill="#4f46e5"/>
+        <path d="M9 9h10M9 13h7M9 17h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="20" cy="19" r="4" fill="white"/>
+        <path d="M20 17.5v3M20 20.5h.01" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>InvoiceFollow</span>
+    </a>
+
+    <div class="auth-card">
+      <h1>Welcome back</h1>
+      <p class="auth-sub">Sign in to access your dashboard.</p>
+
+      <!-- Tab switcher: Password / Magic Link -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="password">Password</button>
+        <button class="auth-tab" data-tab="magic">Magic Link</button>
+      </div>
+
+      <!-- Password login form -->
+      <form id="passwordForm" class="auth-form">
+        <label>
+          <span>Email</span>
+          <input type="email" id="loginEmail" placeholder="you@example.com" required />
+        </label>
+
+        <label>
+          <span>Password</span>
+          <input type="password" id="loginPassword" placeholder="Your password" required />
+        </label>
+
+        <button type="submit" id="loginBtn" class="btn-primary btn-block">
+          Sign in
+        </button>
+
+        <p id="loginStatus" class="auth-status"></p>
+      </form>
+
+      <!-- Magic link form (hidden by default) -->
+      <form id="magicForm" class="auth-form hidden">
+        <label>
+          <span>Email</span>
+          <input type="email" id="magicEmail" placeholder="you@example.com" required />
+        </label>
+
+        <button type="submit" id="magicBtn" class="btn-primary btn-block">
+          Send magic link
+        </button>
+
+        <p id="magicStatus" class="auth-status"></p>
+
+        <p class="auth-hint">
+          We'll email you a link. Click it to sign in — no password needed.
+        </p>
+      </form>
+
+      <p class="auth-footer">
+        Don't have an account? <a href="signup.html">Sign up</a>
+      </p>
+    </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
+  <script>
+    // Tab switcher logic
+    document.querySelectorAll(".auth-tab").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        const target = tab.dataset.tab;
+
+        // Saare tabs inactive karo
+        document.querySelectorAll(".auth-tab").forEach((t) => t.classList.remove("active"));
+        tab.classList.add("active");
+
+        // Saare forms hide karo
+        document.getElementById("passwordForm").classList.add("hidden");
+        document.getElementById("magicForm").classList.add("hidden");
+
+        // Target form dikhao
+        document.getElementById(target + "Form").classList.remove("hidden");
+      });
+    });
+
+    // ---------- Password login ----------
+    document.getElementById("passwordForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("loginEmail").value.trim();
+      const password = document.getElementById("loginPassword").value;
+      const statusEl = document.getElementById("loginStatus");
+      const btn = document.getElementById("loginBtn");
+
+      if (!email || !password) {
+        statusEl.textContent = "Please enter email and password.";
+        statusEl.className = "auth-status error";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Signing in...";
+      statusEl.textContent = "";
+
+      try {
+        const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (error) {
+          statusEl.textContent = error.message;
+          statusEl.className = "auth-status error";
+          btn.disabled = false;
+          btn.textContent = "Sign in";
+          return;
+        }
+
+        // Success
+        statusEl.textContent = "Signed in! Redirecting...";
+        statusEl.className = "auth-status success";
+        setTimeout(() => (window.location.href = "dashboard.html"), 800);
+      } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
+        statusEl.className = "auth-status error";
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+      }
+    });
+
+    // ---------- Magic link ----------
+    document.getElementById("magicForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("magicEmail").value.trim();
+      const statusEl = document.getElementById("magicStatus");
+      const btn = document.getElementById("magicBtn");
+
+      if (!email) {
+        statusEl.textContent = "Please enter your email.";
+        statusEl.className = "auth-status error";
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Sending...";
+      statusEl.textContent = "";
+
+      try {
+        const { error } = await window.supabaseClient.auth.signInWithOtp({
+          email,
+          options: {
+            emailRedirectTo: window.location.origin + "/dashboard.html",
+          },
+        });
+
+        if (error) {
+          statusEl.textContent = error.message;
+          statusEl.className = "auth-status error";
+          btn.disabled = false;
+          btn.textContent = "Send magic link";
+          return;
+        }
+
+        statusEl.textContent = "Check your email for the magic link!";
+        statusEl.className = "auth-status success";
+        btn.disabled = false;
+        btn.textContent = "Send magic link";
+      } catch (err) {
+        statusEl.textContent = "Error: " + err.message;
+        statusEl.className = "auth-status error";
+        btn.disabled = false;
+        btn.textContent = "Send magic link";
+      }
+    });
+  </script>
+</body>
+</html>

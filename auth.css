@@ -1,0 +1,194 @@
+/* ============================================
+   Auth Pages — Signup/Login styles
+   ============================================ */
+
+.auth-body {
+  background: linear-gradient(135deg, #f8f9fb 0%, #eef2ff 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'Inter', sans-serif;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 440px;
+}
+
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+  text-decoration: none;
+  color: var(--text, #0a0a0f);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.auth-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 2.5rem 2rem;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.06);
+}
+
+.auth-card h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 0.5rem;
+  color: #0a0a0f;
+}
+
+.auth-sub {
+  color: #6b7280;
+  font-size: 0.92rem;
+  margin-bottom: 2rem;
+  line-height: 1.5;
+}
+
+/* Form fields */
+.auth-card label {
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.auth-card label > span {
+  display: block;
+  font-size: 0.82rem;
+  color: #0a0a0f;
+  font-weight: 500;
+  margin-bottom: 0.4rem;
+}
+
+.auth-card input {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  color: #0a0a0f;
+  font-family: inherit;
+  font-size: 0.95rem;
+  outline: none;
+  transition: all 0.15s;
+}
+
+.auth-card input:focus {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px #eef2ff;
+}
+
+/* Tabs (password / magic link) */
+.auth-tabs {
+  display: flex;
+  gap: 0.3rem;
+  background: #f8f9fb;
+  border-radius: 10px;
+  padding: 0.25rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 0.55rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.auth-tab.active {
+  background: white;
+  color: #0a0a0f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Status messages */
+.auth-status {
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.85rem;
+  min-height: 1.2rem;
+}
+
+.auth-status.error {
+  color: #ef4444;
+}
+
+.auth-status.success {
+  color: #10b981;
+}
+
+/* Footer link */
+.auth-footer {
+  text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.88rem;
+  color: #6b7280;
+}
+
+.auth-footer a {
+  color: #4f46e5;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Hint text */
+.auth-hint {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  text-align: center;
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+/* Hide utility */
+.hidden {
+  display: none !important;
+}
+
+/* Reuse existing button styles from style.css */
+.btn-primary {
+  background: #4f46e5;
+  color: white;
+  padding: 0.75rem 1.4rem;
+  border: none;
+  border-radius: 10px;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #4338ca;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-block {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0.5rem;
+}

@@ -1339,3 +1339,71 @@ footer {
 .btn-primary:hover .btn-arrow {
   transform: translateX(3px);
 }
+
+/* ============ CREDITS EXPLAINER ============ */
+.credits-explainer {
+  margin-top: 4rem;
+  padding-top: 3rem;
+  border-top: 1px solid var(--border, #e5e7eb);
+}
+
+.credits-explainer h3 {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 2rem;
+}
+
+.credits-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.credit-item {
+  text-align: center;
+  padding: 1.5rem;
+  background: white;
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+}
+
+.credit-number {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--accent-soft, #eef2ff);
+  color: var(--accent, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  font-weight: 800;
+  margin: 0 auto 1rem;
+}
+
+.credit-item h4 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.credit-item p {
+  font-size: 0.88rem;
+  color: var(--text-muted, #6b7280);
+  line-height: 1.6;
+}
+
+.pricing-note {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-subtle, #9ca3af);
+  margin-top: 0.75rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .credits-grid {
+    grid-template-columns: 1fr;
+  }
+}

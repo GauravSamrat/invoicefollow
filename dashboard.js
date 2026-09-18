@@ -12,6 +12,115 @@
 // - OCR invoice scanning (Gemini Vision)
 // - Google Sheets direct import
 // ============================================
+// ============================================
+// AUTH CHECK — Dashboard sirf logged-in users ke liye
+// ============================================
+
+// Global user object
+let currentUser = null;
+let userProfile = null;
+
+// Page load hote hi auth check karo
+async function checkAuthAndLoad() {
+  // Current user get karo
+  currentUser = await getCurrentUser();
+
+  if (!currentUser) {
+    // User logged in nahi hai — login page pe bhejo
+    window.location.href = "login.html";
+    return false;
+  }
+
+  // User profile get karo (credits, subscription info)
+  userProfile = await getUserProfile(currentUser.id);
+
+  if (!userProfile) {
+    // Profile missing — Supabase mein kuch gadbad hai
+    console.error("User profile not found");
+    return false;
+  }
+
+  return true;
+}
+
+// ============================================
+// MIGRATION — localStorage data ko Supabase mein bhejo
+// Yeh sirf pehli baar login pe chalega
+// ============================================
+
+async function migrateLocalDataToSupabase() {
+  const MIGRATED_KEY = "invoicefollow_migrated_" + currentUser.id;
+  const alreadyMigrated = localStorage.getItem(MIGRATED_KEY);
+
+  if (alreadyMigrated) {
+    return; // Pehle hi migrate ho chuka hai
+  }
+
+  // localStorage se data lo
+  const localInvoices = JSON.parse(localStorage.getItem("invoicefollow_invoices") || "[]");
+
+  if (localInvoices.length === 0) {
+    // Kuch migrate karne ko nahi hai
+    localStorage.setItem(MIGRATED_KEY, "true");
+    return;
+  }
+
+  // Confirm karo user se
+  const shouldMigrate = confirm(
+    `We found ${localInvoices.length} invoice${localInvoices.length > 1 ? "s" : ""} in this browser. Import to your account?`
+  );
+
+  if (!shouldMigrate) {
+    localStorage.setItem(MIGRATED_KEY, "true");
+    return;
+  }
+
+  // Supabase mein bulk insert
+  try {
+    const invoicesToInsert = localInvoices.map((inv) => ({
+      user_id: currentUser.id,
+      client_name: inv.clientName,
+      client_phone: inv.clientPhone,
+      client_email: inv.clientEmail || null,
+      invoice_number: inv.invoiceNumber || null,
+      amount: inv.amount,
+      currency: inv.currency || "INR",
+      due_date: inv.dueDate,
+      promise_date: inv.promiseDate || null,
+      work: inv.work || null,
+      notes: inv.notes || null,
+      status: inv.status || "pending",
+      late_fee_type: inv.lateFeeType || null,
+      late_fee_value: inv.lateFeeValue || 0,
+      payment_structure: inv.paymentStructure || "full",
+      deposit_amount: inv.depositAmount || 0,
+      deposit_received: inv.depositReceived || false,
+      reminders_sent: inv.remindersSent || 0,
+      last_touchpoint: inv.lastTouchpoint || null,
+      client_says_paid_at: inv.clientSaysPaidAt || null,
+      demand_letter_sent_at: inv.demandLetterSentAt || null,
+      paid_at: inv.paidAt || null,
+    }));
+
+    const { error } = await window.supabaseClient
+      .from("invoices")
+      .insert(invoicesToInsert);
+
+    if (error) {
+      console.error("Migration error:", error);
+      alert("Could not migrate some data: " + error.message);
+      return;
+    }
+
+    // Success — flag set karo
+    localStorage.setItem(MIGRATED_KEY, "true");
+    alert(`${invoicesToInsert.length} invoice${invoicesToInsert.length > 1 ? "s" : ""} imported to your account.`);
+  } catch (err) {
+    console.error("Migration error:", err);
+  }
+}
+
+
 
 // ---------- Constants ----------
 const STORAGE_INVOICES = "invoicefollow_invoices";
@@ -45,14 +154,22 @@ let invalidRows = [];        // Rows with validation errors
 // INITIALIZATION
 // ============================================
 
-document.addEventListener("DOMContentLoaded", () => {
-  loadData();                    // localStorage se data load karo
-  updateGreeting();              // Greeting update karo
-  renderStats();                 // Stats cards render karo
-  renderTodayActions();          // Today's action section
-  renderInvoices();              // All invoices list
-  renderUserMenu();              // User menu update
-  attachEventListeners();        // Saare event listeners attach karo
+document.addEventListener("DOMContentLoaded", async () => {
+  // Pehle auth check karo
+  const authenticated = await checkAuthAndLoad();
+  if (!authenticated) return; // Redirect ho gaya, kuch mat karo
+
+  // Migration check karo
+  await migrateLocalDataToSupabase();
+
+  // Ab normal load karo
+  loadData();
+  updateGreeting();
+  renderStats();
+  renderTodayActions();
+  renderInvoices();
+  renderUserMenu();
+  attachEventListeners();
 });
 
 // localStorage se data load karo
@@ -512,11 +629,11 @@ function attachEventListeners() {
   });
 
   // ---------- Sign out ----------
-  document.getElementById("signOutBtn").addEventListener("click", () => {
-    if (confirm("Sign out? Your data stays in this browser — you'll see it again when you return.")) {
-      window.location.href = "index.html";
-    }
-  });
+  document.getElementById("signOutBtn").addEventListener("click", async () => {
+  if (confirm("Sign out? Your data will sync next time you log in.")) {
+    await logout(); // auth.js se function
+  }
+});
 
   // ---------- CSV Import ----------
   document.getElementById("importCsvBtn").addEventListener("click", openImportModal);
