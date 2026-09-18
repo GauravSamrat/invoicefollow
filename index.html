@@ -1,108 +1,133 @@
 <!DOCTYPE html>
+<!-- ============================================
+     InvoiceFollow — Landing Page
+     Yeh landing page hai. Yahan user pehli baar aata hai.
+     Yahan se woh dashboard pe ja sakta hai.
+     ============================================ -->
 <html lang="en">
 <head>
+  <!-- Character encoding — sab characters sahi dikhein -->
   <meta charset="UTF-8" />
+  
+  <!-- Mobile pe sahi dikhe -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>InvoiceFollow — AI Payment Reminders for Freelancers</title>
-  <meta name="description" content="Stop chasing clients for payments. AI writes polite reminder emails in 10 seconds. Free for 3 invoices." />
+  
+  <!-- Browser tab mein title -->
+  <title>InvoiceFollow — Track invoices. Get paid faster.</title>
+  
+  <!-- Search engine ke liye description -->
+  <meta name="description" content="India's simplest invoice tracking and WhatsApp reminder tool for freelancers and small businesses. Never miss a payment again." />
+  
+  <!-- Google Fonts — Inter font load karo (professional lagta hai) -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  
+  <!-- Landing page ke styles -->
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <!-- ============ NAVBAR ============ -->
+  <!-- ================= NAVBAR ================= -->
+  <!-- Top navigation bar — sticky hai (scroll pe bhi upar rehta hai) -->
   <nav class="navbar">
-  <div class="container nav-inner">
-    <a href="#" class="logo">
-      <!-- existing SVG -->
-      <span class="logo-text">InvoiceFollow</span>
-      <span id="proBadge" class="pro-badge hidden">PRO</span>
-    </a>
-    <div class="nav-links">
-      <a href="#how">How it works</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#tool" class="btn-nav" id="navCta">Try free</a>
-      <div id="userMenu" class="user-menu hidden">
-        <button id="userMenuBtn" class="user-menu-btn">
-          <span class="user-avatar">KS</span>
-          <span class="user-name">Account</span>
-          <span class="chevron">▾</span>
-        </button>
-        <div id="userDropdown" class="user-dropdown hidden">
-          <div class="dropdown-header">
-            <div class="dropdown-name">Pro Member</div>
-            <div class="dropdown-email" id="dropdownEmail">—</div>
-          </div>
-          <div class="dropdown-item">
-            <span>Plan</span>
-            <span class="dropdown-value">Pro — $9/month</span>
-          </div>
-          <div class="dropdown-item">
-            <span>Expires in</span>
-            <span class="dropdown-value" id="dropdownExpiry">—</span>
-          </div>
-          <div class="dropdown-item">
-            <span>Payment ID</span>
-            <span class="dropdown-value dropdown-mono" id="dropdownPaymentId">—</span>
-          </div>
-          <div class="dropdown-divider"></div>
-          <button class="dropdown-btn" id="logoutBtn">Sign out</button>
-        </div>
+    <div class="container nav-inner">
+      
+      <!-- Logo — SVG icon + brand name -->
+      <a href="/" class="logo">
+        <svg class="logo-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="28" height="28" rx="7" fill="#4f46e5"/>
+          <path d="M9 9h10M9 13h7M9 17h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="19" r="4" fill="white"/>
+          <path d="M20 17.5v3M20 20.5h.01" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">InvoiceFollow</span>
+      </a>
+      
+      <!-- Right side ke links -->
+      <div class="nav-links">
+        <a href="#how">How it works</a>
+        <a href="#features">Features</a>
+        <a href="#pricing">Pricing</a>
+        <!-- Main CTA — dashboard pe le jaata hai -->
+        <a href="dashboard.html" class="btn-nav">Open Dashboard</a>
       </div>
     </div>
-  </div>
-</nav>
+  </nav>
 
-  <!-- ============ HERO ============ -->
+  <!-- ================= HERO SECTION ================= -->
+  <!-- Yeh sabse important section hai — 3 second mein impress karna hai -->
   <section class="hero">
     <div class="container hero-inner">
+      
+      <!-- Left side — text content -->
       <div class="hero-left">
-        <div class="hero-eyebrow">For freelancers &amp; small studios</div>
+        <!-- Small badge upar -->
+        <div class="hero-eyebrow">Built for Indian freelancers &amp; small businesses</div>
+        
+        <!-- Main headline -->
         <h1 class="hero-title">
-          Stop chasing clients for payments.
+          Stop losing money to late payments.
         </h1>
+        
+        <!-- Sub-headline — kya karta hai clearly batao -->
         <p class="hero-subtitle">
-          AI writes polite, escalating reminder emails in 10 seconds.
-          Paste your invoice details. Get 3 ready-to-send emails. Get paid faster.
+          InvoiceFollow tracks every invoice, every client promise, and every follow-up — 
+          so you never miss a payment again. WhatsApp reminders built in.
         </p>
+        
+        <!-- CTA buttons -->
         <div class="hero-cta">
-          <a href="#tool" class="btn-primary">Generate free reminders</a>
+          <a href="/dashboard.html" class="btn-primary">Open free dashboard →</a>
           <a href="#how" class="btn-ghost">See how it works</a>
         </div>
-        <p class="hero-footnote">No signup · 3 free reminders · No credit card</p>
+        
+        <!-- Chhota footnote -->
+        <p class="hero-footnote">Free for 5 invoices · No signup · No credit card</p>
       </div>
 
+      <!-- Right side — product mockup -->
       <div class="hero-right">
-        <!-- Product preview mockup -->
+        <!-- Dashboard ka preview mockup — browser window jaisa -->
         <div class="mockup">
+          
+          <!-- Mockup header — browser dots + title -->
           <div class="mockup-header">
             <div class="mockup-dots">
               <span></span><span></span><span></span>
             </div>
-            <div class="mockup-title">InvoiceFollow</div>
+            <div class="mockup-title">InvoiceFollow · Dashboard</div>
           </div>
+          
+          <!-- Mockup body — actual dashboard preview -->
           <div class="mockup-body">
-            <div class="mockup-field">
-              <span class="mockup-label">Client</span>
-              <span class="mockup-value">Acme Studios</span>
+            
+            <!-- Stats cards -->
+            <div class="mockup-stats">
+              <div class="mockup-stat">
+                <div class="mockup-stat-label">Outstanding</div>
+                <div class="mockup-stat-value">₹80,000</div>
+              </div>
+              <div class="mockup-stat mockup-stat-overdue">
+                <div class="mockup-stat-label">Overdue</div>
+                <div class="mockup-stat-value">₹40,000</div>
+              </div>
             </div>
-            <div class="mockup-field">
-              <span class="mockup-label">Amount</span>
-              <span class="mockup-value">$2,400</span>
+            
+            <!-- Today's action preview -->
+            <div class="mockup-action">
+              <div class="mockup-action-tag">Today's action</div>
+              <div class="mockup-action-client">Acme Studios</div>
+              <div class="mockup-action-meta">Promise date: today</div>
+              <div class="mockup-action-amount">₹25,000</div>
             </div>
-            <div class="mockup-field">
-              <span class="mockup-label">Due</span>
-              <span class="mockup-value">Overdue · 7 days</span>
-            </div>
-            <div class="mockup-divider"></div>
-            <div class="mockup-email">
-              <div class="mockup-email-tag">Day 7 · Firm</div>
-              <div class="mockup-email-line w-90"></div>
-              <div class="mockup-email-line w-70"></div>
-              <div class="mockup-email-line w-85"></div>
-              <div class="mockup-email-line w-60"></div>
+            
+            <!-- Second action -->
+            <div class="mockup-action">
+              <div class="mockup-action-tag mockup-tag-warning">7 days overdue</div>
+              <div class="mockup-action-client">Beta Corp</div>
+              <div class="mockup-action-meta">Due: 05 Sep 2026</div>
+              <div class="mockup-action-amount">₹40,000</div>
             </div>
           </div>
         </div>
@@ -110,244 +135,260 @@
     </div>
   </section>
 
-  <!-- ============ LOGO STRIP ============ -->
+  <!-- ================= TRUST STRIP ================= -->
+  <!-- Kaun-kaun use karta hai — social proof -->
   <section class="strip">
     <div class="container">
-      <p class="strip-label">Trusted by freelancers in</p>
+      <p class="strip-label">Trusted by freelancers &amp; small businesses in</p>
       <div class="strip-items">
         <span>Video editing</span>
         <span>Design</span>
         <span>Copywriting</span>
         <span>Development</span>
         <span>Photography</span>
+        <span>Agencies</span>
       </div>
     </div>
   </section>
 
-  <!-- ============ HOW IT WORKS ============ -->
+  <!-- ================= HOW IT WORKS ================= -->
+  <!-- 3 step process — simple rakho -->
   <section class="how" id="how">
     <div class="container">
       <h2 class="section-title">How it works</h2>
-      <p class="section-subtitle">Three steps. Ten seconds. Paid faster.</p>
+      <p class="section-subtitle">Three steps. Ten seconds. Get paid faster.</p>
 
       <div class="how-grid">
+        
+        <!-- Step 1 -->
         <div class="how-card">
           <div class="how-number">01</div>
-          <h3>Paste invoice details</h3>
-          <p>Client name, amount, due date, and a short description of the work. That's all we need.</p>
+          <h3>Add your invoice</h3>
+          <p>Client name, amount, due date — enter once. The dashboard tracks everything automatically.</p>
         </div>
+        
+        <!-- Step 2 -->
         <div class="how-card">
           <div class="how-number">02</div>
-          <h3>AI writes 3 emails</h3>
-          <p>A gentle nudge for day 3. A firm reminder for day 7. A final notice for day 14. All in your tone.</p>
+          <h3>Track promises &amp; follow-ups</h3>
+          <p>When a client says "I'll pay Friday", mark it. The dashboard reminds you the moment it's due.</p>
         </div>
+        
+        <!-- Step 3 -->
         <div class="how-card">
           <div class="how-number">03</div>
-          <h3>Copy, send, get paid</h3>
-          <p>Send from your own email. No awkward conversations. No lost revenue. No more chasing.</p>
+          <h3>Send WhatsApp &amp; email reminders</h3>
+          <p>One click. Pre-filled message. Send on WhatsApp or email — no more awkward drafting.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ TOOL ============ -->
-  <section class="tool" id="tool">
-    <div class="container tool-container">
-      <div class="tool-header">
-        <h2>Generate your reminders</h2>
-        <p>Free for your first 3 invoices. No signup needed.</p>
-        <div class="usage-counter" id="usageCounter"></div>
-      </div>
-      <div id="proStatusCard" class="pro-status-card hidden">
-  <div class="pro-status-left">
-    <div class="pro-status-icon">✓</div>
-    <div>
-      <div class="pro-status-title">You're on Pro</div>
-      <div class="pro-status-sub" id="proStatusSub">Unlimited reminders active</div>
-    </div>
-  </div>
-  <div class="pro-status-right">
-    <div class="pro-status-days">
-      <div class="pro-status-days-number" id="proStatusDays">30</div>
-      <div class="pro-status-days-label">days left</div>
-    </div>
-  </div>
-</div>
+  <!-- ================= FEATURES ================= -->
+  <!-- Yeh section tool ki real value dikhata hai -->
+  <section class="features" id="features">
+    <div class="container">
+      <h2 class="section-title">Everything you need to get paid</h2>
+      <p class="section-subtitle">Built for the way Indian businesses actually work.</p>
 
-      <div id="form-section" class="tool-card">
-        <div class="input-row">
-          <label>
-            <span>Client name</span>
-            <input type="text" id="clientName" placeholder="John Smith" />
-          </label>
-          <label>
-            <span>Your name</span>
-            <input type="text" id="yourName" placeholder="Rahul Sharma" />
-          </label>
+      <div class="features-grid">
+        
+        <!-- Feature 1 — Today's Action -->
+        <div class="feature-card">
+          <div class="feature-icon">📋</div>
+          <h3>Today's Action dashboard</h3>
+          <p>Sirf woh invoices dikhti hain jo aaj action chahiye. Baaki sab hidden. Zero mental load.</p>
         </div>
-
-        <div class="input-row">
-          <label>
-            <span>Invoice amount</span>
-            <input type="text" id="amount" placeholder="$1,200" />
-          </label>
-          <label>
-            <span>Due date</span>
-            <input type="date" id="dueDate" />
-          </label>
+        
+        <!-- Feature 2 — Promise Tracking -->
+        <div class="feature-card">
+          <div class="feature-icon">🤝</div>
+          <h3>Promise tracking</h3>
+          <p>Client ne kaha "Friday ko pay karunga"? Mark karo. Friday ko dashboard khud yaad dilayega.</p>
         </div>
-
-        <label>
-          <span>What was the work?</span>
-          <input type="text" id="workDesc" placeholder="Video editing for YouTube channel" />
-        </label>
-
-        <button id="generateBtn" class="btn-generate">
-          <span id="btnText">Generate 3 reminder emails</span>
-        </button>
-        <p id="status" class="status"></p>
-      </div>
-
-      <div id="output-section" class="hidden">
-        <div class="output-header">
-          <h3>Your 3 reminder emails</h3>
-          <button id="resetBtn" class="btn-reset">Generate new</button>
+        
+        <!-- Feature 3 — WhatsApp -->
+        <div class="feature-card">
+          <div class="feature-icon">💬</div>
+          <h3>WhatsApp reminders</h3>
+          <p>Pre-filled message. One click. WhatsApp opens with the reminder ready to send. No awkwardness.</p>
         </div>
-
-        <div class="email-card">
-          <div class="email-header">
-            <span class="badge badge-green">Day 3 · Gentle</span>
-            <button class="copy-btn" data-target="email1">Copy</button>
-          </div>
-          <textarea id="email1" readonly></textarea>
+        
+        <!-- Feature 4 — Email -->
+        <div class="feature-card">
+          <div class="feature-icon">✉️</div>
+          <h3>Email reminders</h3>
+          <p>3 escalating templates (Day 3, Day 7, Day 14). Professional tone, ready to send.</p>
         </div>
-
-        <div class="email-card">
-          <div class="email-header">
-            <span class="badge badge-yellow">Day 7 · Firm</span>
-            <button class="copy-btn" data-target="email2">Copy</button>
-          </div>
-          <textarea id="email2" readonly></textarea>
+        
+        <!-- Feature 5 — Timeline -->
+        <div class="feature-card">
+          <div class="feature-icon">📅</div>
+          <h3>Full invoice timeline</h3>
+          <p>Har invoice ka pura history — kab create hua, kab due tha, kab contact kiya, kab paid hua.</p>
         </div>
-
-        <div class="email-card">
-          <div class="email-header">
-            <span class="badge badge-red">Day 14 · Final</span>
-            <button class="copy-btn" data-target="email3">Copy</button>
-          </div>
-          <textarea id="email3" readonly></textarea>
+        
+        <!-- Feature 6 — Export -->
+        <div class="feature-card">
+          <div class="feature-icon">📊</div>
+          <h3>Export your data</h3>
+          <p>Ek click mein CSV export. Data tumhara hai — kabhi bhi nikal sakte ho, kisi ke saath share nahi hota.</p>
         </div>
-
-        <div class="upgrade-cta">
-          <div>
-            <strong>Need more than 3 invoices?</strong>
-            <p>Get unlimited reminders for $9/month.</p>
-          </div>
-          <a href="#" class="btn-primary btn-upgrade" id="upgradeBtn">Upgrade to Pro</a>
-        </div>
-      </div>
-
-      <div id="paywall" class="hidden paywall">
-        <h3>You've used your 3 free reminders</h3>
-        <p>Upgrade to Pro for unlimited reminders, custom templates, and priority support.</p>
-        <a href="#" class="btn-primary btn-upgrade" id="paywallUpgradeBtn">Upgrade for $9/month</a>
-        <p class="paywall-footnote">Cancel anytime · 7-day money-back guarantee</p>
       </div>
     </div>
   </section>
 
-  <!-- ============ PRICING ============ -->
+  <!-- ================= WHY IT'S DIFFERENT ================= -->
+  <!-- Competitor se alag kaise — trust build karo -->
+  <section class="why">
+    <div class="container">
+      <h2 class="section-title">Why InvoiceFollow is different</h2>
+      <p class="section-subtitle">Accounting software track karta hai invoices. InvoiceFollow track karta hai conversations.</p>
+
+      <div class="why-grid">
+        
+        <!-- Point 1 -->
+        <div class="why-card">
+          <div class="why-number">01</div>
+          <h3>"Software invoice hold karta hai, conversation nahi"</h3>
+          <p>Accounting tools kehte hain kisne pay nahi kiya. Lekin woh nahi jaante ki Marc ne Friday ka promise kiya tha. InvoiceFollow woh bhi track karta hai.</p>
+        </div>
+        
+        <!-- Point 2 -->
+        <div class="why-card">
+          <div class="why-number">02</div>
+          <h3>Mental overhead solve karta hai, sirf time nahi</h3>
+          <p>Problem email likhne mein nahi hai — problem yeh hai ki dimaag mein constantly chal raha hota hai "kya bhool gaya kya nahi?" InvoiceFollow woh load utha leta hai.</p>
+        </div>
+        
+        <!-- Point 3 -->
+        <div class="why-card">
+          <div class="why-number">03</div>
+          <h3>WhatsApp-first, email optional</h3>
+          <p>India mein clients WhatsApp pe reply karte hain, email pe nahi. InvoiceFollow WhatsApp ke liye designed hai. Email tab jab client professional ho.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PRICING ================= -->
+  <!-- Pricing clearly dikhao — koi confusion nahi -->
   <section class="pricing" id="pricing">
     <div class="container">
       <h2 class="section-title">Simple, honest pricing</h2>
       <p class="section-subtitle">Cheaper than one late payment.</p>
 
       <div class="pricing-grid">
+        
+        <!-- Free Plan -->
         <div class="pricing-card">
           <h3>Free</h3>
-          <div class="price">$0<span>forever</span></div>
+          <div class="price">₹0<span>forever</span></div>
           <ul>
-            <li>3 reminder sets</li>
-            <li>All 3 escalation levels</li>
-            <li>Copy to clipboard</li>
+            <li>Up to 5 invoices</li>
+            <li>Today's Action dashboard</li>
+            <li>WhatsApp reminders</li>
+            <li>Email reminders</li>
+            <li>CSV export</li>
           </ul>
-          <a href="#tool" class="btn-ghost btn-block">Start free</a>
+          <a href="/dashboard.html" class="btn-ghost btn-block">Start free</a>
         </div>
-
+        
+        <!-- Pro Plan (Featured) -->
         <div class="pricing-card pricing-featured">
           <div class="popular-badge">Most popular</div>
           <h3>Pro</h3>
-          <div class="price">$9<span>per month</span></div>
+          <div class="price">₹499<span>per month</span></div>
           <ul>
-            <li>Unlimited reminder sets</li>
-            <li>Custom tone &amp; language</li>
-            <li>Saved client history</li>
-            <li>Priority support</li>
+            <li>Unlimited invoices</li>
+            <li>Everything in Free</li>
+            <li>Auto follow-up schedules</li>
+            <li>Guided automation</li>
+            <li>Priority email support</li>
             <li>Cancel anytime</li>
           </ul>
-          <a href="#" class="btn-primary btn-block" id="pricingUpgradeBtn">Upgrade to Pro</a>
+          <!-- Payment link baad mein Razorpay se connect karenge -->
+          <a href="/dashboard.html" class="btn-primary btn-block">Upgrade to Pro</a>
         </div>
-
+        
+        <!-- Business Plan -->
         <div class="pricing-card">
-          <h3>Lifetime</h3>
-          <div class="price">$49<span>one-time</span></div>
+          <h3>Business</h3>
+          <div class="price">₹999<span>per month</span></div>
           <ul>
             <li>Everything in Pro</li>
-            <li>Pay once, use forever</li>
-            <li>All future updates</li>
-            <li>No subscription</li>
-            <li>Limited to first 100 users</li>
+            <li>Multi-user access</li>
+            <li>Advanced reports</li>
+            <li>GST-ready invoices</li>
+            <li>Dedicated support</li>
           </ul>
-          <a href="#" class="btn-ghost btn-block" id="lifetimeBtn">Get lifetime access</a>
+          <a href="/dashboard.html" class="btn-ghost btn-block">Choose Business</a>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============ FAQ ============ -->
+  <!-- ================= FAQ ================= -->
+  <!-- Common questions — trust build karta hai -->
   <section class="faq">
     <div class="container faq-container">
       <h2 class="section-title">Frequently asked</h2>
+      
       <div class="faq-list">
+        
         <details>
-          <summary>Is this really free?</summary>
-          <p>Yes. Your first 3 reminder sets are completely free. No signup, no credit card. Upgrade only if you find it useful.</p>
+          <summary>Yeh free hai ya paid?</summary>
+          <p>Free plan mein 5 invoices tak track kar sakte ho. Uske baad ₹499/month Pro plan hai. Koi credit card nahi chahiye start karne ke liye.</p>
         </details>
+        
         <details>
-          <summary>Will my clients know I used AI?</summary>
-          <p>No. Every email is written in your tone, with your name and details. They read like you wrote them.</p>
+          <summary>Mera data kahan store hota hai?</summary>
+          <p>Tumhare browser ke localStorage mein. Hum apne servers pe kuch store nahi karte. Isliye tumhara data sirf tumhare paas hai — aur tum kabhi bhi CSV export kar sakte ho.</p>
         </details>
+        
         <details>
-          <summary>Do you store my client data?</summary>
-          <p>No. Nothing is saved on our servers. Your details are sent to the AI, emails are generated, and everything is discarded.</p>
+          <summary>WhatsApp automatically send karta hai?</summary>
+          <p>Nahi. Hum message draft karte hain, phir WhatsApp open karte hain. Tum "Send" dabao — woh manual step hai by design. Automation ka option hai Pro plan mein, with consent.</p>
         </details>
+        
         <details>
-          <summary>What payment methods do you accept?</summary>
-          <p>All major credit and debit cards. Payments are processed securely by Lemon Squeezy.</p>
+          <summary>Kya yeh accounting software replace karta hai?</summary>
+          <p>Nahi. Tumhara accounting software ledger hold karta hai. InvoiceFollow woh track karta hai jo accounting software miss karta hai — conversations, promises, aur follow-ups.</p>
         </details>
+        
         <details>
-          <summary>What if I want a refund?</summary>
-          <p>7-day money-back guarantee, no questions asked. Just email us.</p>
+          <summary>Kya main apna data export kar sakta hoon?</summary>
+          <p>Haan. Ek click mein CSV export. Sab invoices, clients, promises — sab kuch. Data tumhara hai, tumhare control mein hai.</p>
+        </details>
+        
+        <details>
+          <summary>Kya refund milta hai?</summary>
+          <p>Haan. 7-day money-back guarantee. Bina koi sawaal poochhe. Just email karo aur refund ho jayega.</p>
         </details>
       </div>
     </div>
   </section>
 
-  <!-- ============ FINAL CTA ============ -->
+  <!-- ================= FINAL CTA ================= -->
+  <!-- Last push — user ko action lene ke liye -->
   <section class="final-cta">
     <div class="container">
-      <h2>Stop losing money to late payments.</h2>
-      <p>Generate your first 3 reminders free. Takes 10 seconds.</p>
-      <a href="#tool" class="btn-primary btn-large">Generate free reminders</a>
+      <h2>Ready to stop chasing payments?</h2>
+      <p>Open the dashboard. Add your first invoice. Get paid faster.</p>
+      <a href="/dashboard.html" class="btn-primary btn-large">Open free dashboard →</a>
+      <p style="margin-top: 1rem; font-size: 0.85rem; color: var(--text-subtle);">No signup · 5 free invoices · Cancel anytime</p>
     </div>
   </section>
 
-  <!-- ============ FOOTER ============ -->
+  <!-- ================= FOOTER ================= -->
+  <!-- Bottom — links, legal pages, copyright -->
   <footer>
     <div class="container footer-inner">
+      
+      <!-- Left — brand info -->
       <div class="footer-brand">
         <div class="logo">
-          <svg class="logo-mark" width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg class="logo-mark" width="24" height="24" viewBox="0 0 28 28" fill="none">
             <rect width="28" height="28" rx="7" fill="#4f46e5"/>
             <path d="M9 9h10M9 13h7M9 17h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
             <circle cx="20" cy="19" r="4" fill="white"/>
@@ -355,21 +396,43 @@
           </svg>
           <span class="logo-text">InvoiceFollow</span>
         </div>
-        <p>AI payment reminders for freelancers.</p>
+        <p>Track invoices, promises, and follow-ups. Built in India.</p>
       </div>
+      
+      <!-- Right — links -->
       <div class="footer-links">
-  <a href="/terms.html">Terms</a>
-  <a href="/privacy.html">Privacy</a>
-  <a href="/refund.html">Refund</a>
-  <a href="/contact.html">Contact</a>
-</div>
+        <a href="/terms.html">Terms</a>
+        <a href="/privacy.html">Privacy</a>
+        <a href="/refund.html">Refund</a>
+        <a href="/contact.html">Contact</a>
+      </div>
     </div>
+    
+    <!-- Copyright -->
     <div class="container">
-      <p class="footer-copy">© 2026 InvoiceFollow. All rights reserved.</p>
+      <p class="footer-copy">© 2026 InvoiceFollow. Made with care in India.</p>
     </div>
   </footer>
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
-  <script src="script.js"></script>
+  <!-- ============================================
+       JAVASCRIPT
+       Landing page ke liye koi heavy JS nahi chahiye.
+       Sirf smooth scroll aur basic interactions.
+       ============================================ -->
+  <script>
+    // Smooth scroll — jab user nav link pe click kare, smooth scroll ho
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href');
+        if (targetId === '#') return;
+        
+        const target = document.querySelector(targetId);
+        if (target) {
+          e.preventDefault();
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
+  </script>
 </body>
 </html>

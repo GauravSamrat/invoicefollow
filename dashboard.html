@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — InvoiceFollow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="dashboard-body">
+
+  <!-- ================= TOP NAVBAR ================= -->
+  <nav class="dash-nav">
+    <div class="dash-nav-inner">
+      <a href="/" class="logo">
+        <svg class="logo-mark" width="26" height="26" viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="7" fill="#4f46e5"/>
+          <path d="M9 9h10M9 13h7M9 17h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <circle cx="20" cy="19" r="4" fill="white"/>
+          <path d="M20 17.5v3M20 20.5h.01" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="logo-text">InvoiceFollow</span>
+      </a>
+
+      <div class="dash-nav-actions">
+        <button id="settingsBtn" class="dash-icon-btn" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+          </svg>
+        </button>
+        <div id="userMenu" class="user-menu">
+          <button id="userMenuBtn" class="user-menu-btn">
+            <span class="user-avatar" id="userAvatar">KS</span>
+            <span class="user-name" id="userName">Account</span>
+          </button>
+          <div id="userDropdown" class="user-dropdown hidden">
+            <div class="dropdown-header">
+              <div class="dropdown-name" id="dropdownName">Guest User</div>
+              <div class="dropdown-email" id="dropdownEmail">—</div>
+            </div>
+            <div class="dropdown-item">
+              <span>Plan</span>
+              <span class="dropdown-value" id="dropdownPlan">Free</span>
+            </div>
+            <div class="dropdown-item">
+              <span>Invoices used</span>
+              <span class="dropdown-value" id="dropdownUsage">0 / 5</span>
+            </div>
+            <div class="dropdown-divider"></div>
+            <button class="dropdown-btn" id="signOutBtn">Sign out</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ================= MAIN CONTENT ================= -->
+  <main class="dash-main">
+
+    <!-- TOP: Stats -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Outstanding</div>
+        <div class="stat-value" id="statTotal">₹0</div>
+        <div class="stat-sub" id="statTotalSub">0 invoices</div>
+      </div>
+      <div class="stat-card stat-overdue">
+        <div class="stat-label">Overdue</div>
+        <div class="stat-value" id="statOverdue">₹0</div>
+        <div class="stat-sub" id="statOverdueSub">0 invoices</div>
+      </div>
+      <div class="stat-card stat-paid">
+        <div class="stat-label">Paid (This Month)</div>
+        <div class="stat-value" id="statPaid">₹0</div>
+        <div class="stat-sub" id="statPaidSub">0 invoices</div>
+      </div>
+    </section>
+
+    <!-- TODAY'S ACTION SECTION -->
+    <section class="today-section">
+      <div class="section-header">
+        <div>
+          <h2 id="greeting">Good morning</h2>
+          <p id="actionSummary" class="section-sub">No follow-ups today. You're all caught up!</p>
+        </div>
+        <!-- Button group — Add + Import -->
+<div class="button-group">
+  <button id="importCsvBtn" class="btn-ghost">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:-2px;">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+      <polyline points="17 8 12 3 7 8"/>
+      <line x1="12" y1="3" x2="12" y2="15"/>
+    </svg>
+    Import CSV
+  </button>
+  <button id="addInvoiceBtn" class="btn-primary">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px; vertical-align:-2px;">
+      <path d="M12 5v14M5 12h14"/>
+    </svg>
+    Add Invoice
+  </button>
+</div>
+      </div>
+
+      <div id="todayActions" class="action-list"></div>
+      <div id="allClear" class="all-clear hidden">
+        <div class="all-clear-icon">✓</div>
+        <div>
+          <div class="all-clear-title">All clear!</div>
+          <div class="all-clear-sub">No follow-ups needed today. Add a new invoice or relax.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ALL INVOICES -->
+    <section class="invoices-section">
+      <div class="section-header">
+        <h2>All Invoices</h2>
+        <div class="filter-bar">
+          <button class="filter-btn active" data-filter="all">All</button>
+          <button class="filter-btn" data-filter="pending">Pending</button>
+          <button class="filter-btn" data-filter="overdue">Overdue</button>
+          <button class="filter-btn" data-filter="paid">Paid</button>
+          <input type="text" id="searchInput" placeholder="Search client..." class="search-input" />
+        </div>
+      </div>
+
+      <div id="invoiceList" class="invoice-list"></div>
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No invoices yet</div>
+        <div class="empty-sub">Click "Add Invoice" to start tracking your payments.</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= ADD INVOICE MODAL ================= -->
+  <div id="addModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Add New Invoice</h3>
+        <button id="closeAddModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-row">
+          <label>
+            <span>Client Name *</span>
+            <input type="text" id="fClientName" placeholder="Acme Studios" />
+          </label>
+          <label>
+            <span>Client Phone (WhatsApp) *</span>
+            <input type="text" id="fClientPhone" placeholder="+91 98765 43210" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Client Email</span>
+            <input type="email" id="fClientEmail" placeholder="acme@example.com" />
+          </label>
+          <label>
+            <span>Invoice Number</span>
+            <input type="text" id="fInvoiceNumber" placeholder="INV-047" />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Amount *</span>
+            <input type="number" id="fAmount" placeholder="25000" />
+          </label>
+          <label>
+            <span>Currency</span>
+            <select id="fCurrency">
+              <option value="INR">INR (₹)</option>
+              <option value="USD">USD ($)</option>
+              <option value="EUR">EUR (€)</option>
+            </select>
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Due Date *</span>
+            <input type="date" id="fDueDate" />
+          </label>
+          <label>
+            <span>Promise Date (client promise)</span>
+            <input type="date" id="fPromiseDate" />
+          </label>
+        </div>
+        <label>
+          <span>What was the work?</span>
+          <input type="text" id="fWork" placeholder="Video editing for YouTube channel" />
+        </label>
+        <label>
+          <span>Notes (optional)</span>
+          <textarea id="fNotes" rows="2" placeholder="Client usually pays late"></textarea>
+        </label>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelAdd" class="btn-ghost">Cancel</button>
+        <button id="saveInvoice" class="btn-primary">Save Invoice</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= INVOICE DETAIL MODAL ================= -->
+  <div id="detailModal" class="modal-overlay hidden">
+    <div class="modal modal-wide">
+      <div class="modal-header">
+        <h3 id="detailTitle">Invoice Detail</h3>
+        <button id="closeDetailModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body" id="detailBody">
+        <!-- Detail content will be injected here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= SETTINGS MODAL ================= -->
+  <div id="settingsModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Settings</h3>
+        <button id="closeSettingsModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <label>
+          <span>Your Name</span>
+          <input type="text" id="sYourName" placeholder="Kumar Gaurav Samrat" />
+        </label>
+        <label>
+          <span>Your Email</span>
+          <input type="email" id="sYourEmail" placeholder="you@example.com" />
+        </label>
+        <label>
+          <span>Default Currency</span>
+          <select id="sCurrency">
+            <option value="INR">INR (₹)</option>
+            <option value="USD">USD ($)</option>
+            <option value="EUR">EUR (€)</option>
+          </select>
+        </label>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-label">Auto Follow-up Days (after due date)</div>
+        <div class="form-row">
+          <label>
+            <span>Reminder 1</span>
+            <input type="number" id="sDay1" value="3" min="1" max="30" />
+          </label>
+          <label>
+            <span>Reminder 2</span>
+            <input type="number" id="sDay2" value="7" min="1" max="30" />
+          </label>
+          <label>
+            <span>Reminder 3</span>
+            <input type="number" id="sDay3" value="14" min="1" max="60" />
+          </label>
+        </div>
+
+        <div class="settings-divider"></div>
+
+        <div class="settings-label">Automation Mode</div>
+        <label class="radio-option">
+          <input type="radio" name="automation" value="guided" checked />
+          <div>
+            <div class="radio-title">Guided (recommended)</div>
+            <div class="radio-sub">You approve each reminder before it's sent</div>
+          </div>
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="automation" value="automatic" />
+          <div>
+            <div class="radio-title">Fully Automatic</div>
+            <div class="radio-sub">Tool sends reminders automatically on due dates</div>
+          </div>
+        </label>
+
+        <div class="settings-divider"></div>
+
+        <button id="exportCsvBtn" class="btn-ghost btn-block">Export Data (CSV)</button>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelSettings" class="btn-ghost">Cancel</button>
+        <button id="saveSettings" class="btn-primary">Save Settings</button>
+      </div>
+    </div>
+  </div>
+<!-- ================= CSV IMPORT MODAL ================= -->
+<!-- Yeh modal 3 steps mein kaam karta hai:
+     Step 1: File upload
+     Step 2: Column mapping
+     Step 3: Preview + import
+-->
+<div id="importModal" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>Import Invoices from CSV</h3>
+      <button id="closeImportModal" class="modal-close">×</button>
+    </div>
+    
+    <div class="modal-body">
+      
+      <!-- ============ STEP 1: FILE UPLOAD ============ -->
+      <div id="importStep1">
+        <p class="import-hint">
+          Apne accounting software (Tally, Zoho Books, QuickBooks) ya Excel/Google Sheets se CSV export karo, phir yahan upload karo.
+        </p>
+        
+        <!-- Drag & drop area -->
+        <div id="dropZone" class="drop-zone">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+          <div class="drop-zone-title">CSV file yahan drop karo</div>
+          <div class="drop-zone-sub">ya click karke browse karo</div>
+          <input type="file" id="csvFileInput" accept=".csv" hidden />
+        </div>
+        
+        <!-- Sample download -->
+        <div class="sample-download">
+          <span>Format samajhne ke liye:</span>
+          <a href="#" id="downloadSampleBtn" class="sample-link">Sample CSV download karo</a>
+        </div>
+      </div>
+      
+      <!-- ============ STEP 2: COLUMN MAPPING ============ -->
+      <div id="importStep2" class="hidden">
+        <p class="import-hint">
+          <strong id="csvRowCount">0</strong> rows mili. Ab batayein kaunsa column kis field se match karta hai.
+        </p>
+        
+        <div id="mappingGrid" class="mapping-grid">
+          <!-- JS se populate hoga -->
+        </div>
+        
+        <div class="import-warning">
+          <strong>Tip:</strong> Sirf <em>Client Name</em>, <em>Phone</em>, <em>Amount</em>, aur <em>Due Date</em> required hain. Baaki optional hain.
+        </div>
+      </div>
+      
+      <!-- ============ STEP 3: PREVIEW ============ -->
+      <div id="importStep3" class="hidden">
+        <p class="import-hint">
+          Preview dekhein. <strong id="validCount">0</strong> valid, <strong id="invalidCount">0</strong> invalid.
+        </p>
+        
+        <div class="preview-table-wrapper">
+          <table class="preview-table" id="previewTable">
+            <!-- JS se populate hoga -->
+          </table>
+        </div>
+        
+        <div id="invalidErrors" class="import-errors hidden">
+          <!-- Errors list JS se populate hoga -->
+        </div>
+      </div>
+      
+    </div>
+    
+    <div class="modal-footer">
+      <button id="importBackBtn" class="btn-ghost hidden">← Back</button>
+      <button id="cancelImport" class="btn-ghost">Cancel</button>
+      <button id="importNextBtn" class="btn-primary hidden" disabled>Next →</button>
+      <button id="importConfirmBtn" class="btn-primary hidden" disabled>Import Invoices</button>
+    </div>
+  </div>
+</div>
+  <!-- ================= REMINDER PREVIEW MODAL ================= -->
+  <div id="reminderModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="reminderTitle">Send Reminder</h3>
+        <button id="closeReminderModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <label>
+          <span>Message preview (editable)</span>
+          <textarea id="reminderMessage" rows="8"></textarea>
+        </label>
+        <div class="reminder-actions">
+          <button id="sendWhatsappBtn" class="btn-whatsapp">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px; vertical-align:-3px;">
+              <path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6.1-.1.3-.4.5-.6.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 .9-1 2.3 0 1.3.9 2.6 1 2.8.1.2 1.8 2.8 4.4 3.9.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3z"/>
+              <path d="M20.5 3.5C18.3 1.3 15.3 0 12 0 5.4 0 0 5.4 0 12c0 2.1.6 4.1 1.6 5.9L0 24l6.3-1.6c1.7.9 3.6 1.4 5.6 1.4h.1c6.6 0 12-5.4 12-12 0-3.2-1.2-6.2-3.5-8.3zM12 21.8c-1.8 0-3.5-.5-5-1.4l-.4-.2-3.7 1 1-3.6-.2-.4c-1-1.6-1.5-3.4-1.5-5.2 0-5.4 4.4-9.8 9.8-9.8 2.6 0 5.1 1 6.9 2.9 1.8 1.8 2.9 4.3 2.9 6.9 0 5.4-4.4 9.8-9.8 9.8z"/>
+            </svg>
+            Send on WhatsApp
+          </button>
+          <button id="sendEmailBtn" class="btn-primary">
+            Send via Email
+          </button>
+          <button id="copyMessageBtn" class="btn-ghost">
+            Copy Message
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
