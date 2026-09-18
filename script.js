@@ -1,14 +1,13 @@
 // ============================================
-// InvoiceFollow — Main Script with Paywall
+// InvoiceFollow — Main Script
 // Free users: 3 generations. Then paywall.
 // ============================================
 
-// ---------- Constants ----------
 const FREE_LIMIT = 3;
 const STORAGE_KEY = "invoicefollow_usage";
 const PRO_KEY = "invoicefollow_pro";
 
-// ⚠️ YAHAN APNA LEMON SQUEEZY PAYMENT LINK DAALO (Step 5 mein)
+// ⚠️ Replace with your Lemon Squeezy payment link (Step 5)
 const PAYMENT_LINK = "https://YOUR-STORE.lemonsqueezy.com/checkout/buy/YOUR-PRODUCT-ID";
 
 // ---------- DOM ----------
@@ -36,19 +35,19 @@ function isPro() {
 
 function updateUsageDisplay() {
   if (isPro()) {
-    usageCounter.textContent = "✨ Pro user — unlimited reminders";
+    usageCounter.textContent = "Pro account — unlimited reminders";
     return;
   }
   const used = getUsage();
   const left = FREE_LIMIT - used;
   if (left > 0) {
-    usageCounter.textContent = `${left} free reminder${left === 1 ? "" : "s"} left`;
+    usageCounter.textContent = `${left} free reminder${left === 1 ? "" : "s"} remaining`;
   } else {
     usageCounter.textContent = "Free limit reached";
   }
 }
 
-// ---------- Event Listeners ----------
+// ---------- Event listeners ----------
 generateBtn.addEventListener("click", generateEmails);
 
 resetBtn.addEventListener("click", () => {
@@ -62,13 +61,14 @@ document.querySelectorAll(".copy-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     const target = document.getElementById(btn.dataset.target);
     navigator.clipboard.writeText(target.value);
-    btn.textContent = "Copied!";
+    btn.textContent = "Copied";
     setTimeout(() => (btn.textContent = "Copy"), 1500);
   });
 });
 
 // Upgrade buttons
-document.querySelectorAll("#upgradeBtn, #paywallUpgradeBtn, #pricingUpgradeBtn, #lifetimeBtn").forEach((btn) => {
+["upgradeBtn", "paywallUpgradeBtn", "pricingUpgradeBtn", "lifetimeBtn"].forEach((id) => {
+  const btn = document.getElementById(id);
   if (btn) {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -79,7 +79,6 @@ document.querySelectorAll("#upgradeBtn, #paywallUpgradeBtn, #pricingUpgradeBtn, 
 
 // ---------- Main function ----------
 async function generateEmails() {
-  // Check paywall
   if (!isPro() && getUsage() >= FREE_LIMIT) {
     showPaywall();
     return;
@@ -92,12 +91,12 @@ async function generateEmails() {
   const workDesc = document.getElementById("workDesc").value.trim();
 
   if (!clientName || !yourName || !amount || !dueDate || !workDesc) {
-    statusEl.textContent = "⚠️ Please fill in all fields";
+    statusEl.textContent = "Please fill in all fields to continue.";
     return;
   }
 
   generateBtn.disabled = true;
-  statusEl.textContent = "⏳ AI is writing your emails...";
+  statusEl.textContent = "Writing your emails...";
 
   const prompt = `You are an expert at writing polite but effective payment reminder emails for freelancers.
 
@@ -142,7 +141,6 @@ Subject: ...
     document.getElementById("email2").value = emails[1] || "Could not generate email 2.";
     document.getElementById("email3").value = emails[2] || "Could not generate email 3.";
 
-    // Increment usage (if not Pro)
     if (!isPro()) {
       setUsage(getUsage() + 1);
     }
@@ -152,13 +150,13 @@ Subject: ...
     statusEl.textContent = "";
   } catch (err) {
     console.error(err);
-    statusEl.textContent = "❌ Error: " + err.message;
+    statusEl.textContent = "Error: " + err.message;
   } finally {
     generateBtn.disabled = false;
   }
 }
 
-// ---------- API call with retry ----------
+// ---------- API with retry ----------
 async function callGenerateAPI(prompt, maxRetries = 3) {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const response = await fetch("/api/generate", {
@@ -169,7 +167,7 @@ async function callGenerateAPI(prompt, maxRetries = 3) {
 
     if (response.status === 429) {
       const waitSec = 5 * (attempt + 1);
-      statusEl.textContent = `⏳ Rate limit. Waiting ${waitSec}s...`;
+      statusEl.textContent = `Service is busy. Retrying in ${waitSec} seconds...`;
       await new Promise((r) => setTimeout(r, waitSec * 1000));
       continue;
     }
@@ -180,13 +178,13 @@ async function callGenerateAPI(prompt, maxRetries = 3) {
     }
 
     const data = await response.json();
-    if (!data.text) throw new Error("AI returned empty response");
+    if (!data.text) throw new Error("AI returned an empty response.");
     return data.text;
   }
-  throw new Error("Rate limit exceeded. Try again in a minute.");
+  throw new Error("Service is busy. Please try again in a minute.");
 }
 
-// ---------- Parse 3 emails ----------
+// ---------- Parse ----------
 function parseEmails(text) {
   const parts = text.split(/===\s*EMAIL\s*\d\s*===/i);
   return parts.slice(1).map((p) => p.trim());
