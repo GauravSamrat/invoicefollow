@@ -3,6 +3,103 @@
 // Free users: 3 generations. Then paywall.
 // ============================================
 
+
+
+
+// ============================================
+// Pro Status Display
+// ============================================
+
+function getProExpiry() {
+  const expiry = localStorage.getItem("invoicefollow_pro_expiry");
+  if (!expiry) return null;
+  return new Date(expiry);
+}
+
+function getDaysLeft() {
+  const expiry = getProExpiry();
+  if (!expiry) return 0;
+  const now = new Date();
+  const diff = Math.ceil((expiry - now) / (1000 * 60 * 60 * 24));
+  return Math.max(0, diff);
+}
+
+function getPaymentId() {
+  return localStorage.getItem("invoicefollow_payment_id") || "—";
+}
+
+function updateProUI() {
+  const proBadge = document.getElementById("proBadge");
+  const userMenu = document.getElementById("userMenu");
+  const proStatusCard = document.getElementById("proStatusCard");
+  const navCta = document.getElementById("navCta");
+
+  if (isPro()) {
+    // Navbar: Pro badge show karo, CTA hide karo
+    if (proBadge) proBadge.classList.remove("hidden");
+    if (userMenu) userMenu.classList.remove("hidden");
+    if (navCta) navCta.classList.add("hidden");
+
+    // Tool section: Pro status card show karo
+    if (proStatusCard) {
+      proStatusCard.classList.remove("hidden");
+      const days = getDaysLeft();
+      document.getElementById("proStatusDays").textContent = days;
+      document.getElementById("proStatusSub").textContent =
+        `${days} days of unlimited reminders remaining`;
+
+      // Dropdown values
+      const expiryDate = getProExpiry();
+      if (expiryDate) {
+        document.getElementById("dropdownExpiry").textContent =
+          expiryDate.toLocaleDateString("en-IN", {
+            day: "numeric",
+            month: "short",
+            year: "numeric",
+          });
+      }
+      document.getElementById("dropdownPaymentId").textContent = getPaymentId();
+    }
+  } else {
+    // Pro nahi hai
+    if (proBadge) proBadge.classList.add("hidden");
+    if (userMenu) userMenu.classList.add("hidden");
+    if (navCta) navCta.classList.remove("hidden");
+    if (proStatusCard) proStatusCard.classList.add("hidden");
+  }
+}
+
+// User menu dropdown toggle
+const userMenuBtn = document.getElementById("userMenuBtn");
+const userDropdown = document.getElementById("userDropdown");
+
+if (userMenuBtn && userDropdown) {
+  userMenuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    userDropdown.classList.toggle("hidden");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!userDropdown.contains(e.target) && !userMenuBtn.contains(e.target)) {
+      userDropdown.classList.add("hidden");
+    }
+  });
+}
+
+// Logout button
+const logoutBtn = document.getElementById("logoutBtn");
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to sign out? You will lose Pro access on this device.")) {
+      localStorage.removeItem("invoicefollow_pro");
+      localStorage.removeItem("invoicefollow_pro_expiry");
+      localStorage.removeItem("invoicefollow_payment_id");
+      localStorage.removeItem("invoicefollow_usage");
+      window.location.reload();
+    }
+  });
+}
+
 const FREE_LIMIT = 3;
 const STORAGE_KEY = "invoicefollow_usage";
 const PRO_KEY = "invoicefollow_pro";
@@ -29,7 +126,20 @@ function setUsage(n) {
 }
 
 function isPro() {
-  return localStorage.getItem(PRO_KEY) === "true";
+  const pro = localStorage.getItem("invoicefollow_pro") === "true";
+  if (!pro) return false;
+
+  const expiry = localStorage.getItem("invoicefollow_pro_expiry");
+  if (!expiry) return false;
+
+  // Expiry check karo
+  if (new Date(expiry) < new Date()) {
+    localStorage.removeItem("invoicefollow_pro");
+    localStorage.removeItem("invoicefollow_pro_expiry");
+    return false;
+  }
+
+  return true;
 }
 
 function updateUsageDisplay() {
@@ -217,10 +327,16 @@ async function openRazorpayCheckout(amount = 9) {
       description: "Pro Plan — Unlimited Reminders",
       order_id: data.orderId,
       handler: function (response) {
-        // Payment success!
-        localStorage.setItem("invoicefollow_pro", "true");
-        alert("Payment successful! Pro access enabled.");
-        window.location.reload();
+  // Pro access ke saath expiry date bhi save karo
+  const expiryDate = new Date();
+  expiryDate.setDate(expiryDate.getDate() + 30); // 30 din baad expire
+
+  localStorage.setItem("invoicefollow_pro", "true");
+  localStorage.setItem("invoicefollow_pro_expiry", expiryDate.toISOString());
+  localStorage.setItem("invoicefollow_payment_id", response.razorpay_payment_id);
+
+  alert("Payment successful! Pro access enabled for 30 days.");
+  window.location.reload();
       },
       prefill: {
         name: "",
@@ -275,3 +391,5 @@ function showPaywall() {
 // ---------- Init ----------
 updateUsageDisplay();
 checkPaywall();
+// Init Pro UI on page load
+updateProUI();

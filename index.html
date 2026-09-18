@@ -14,23 +14,46 @@
 
   <!-- ============ NAVBAR ============ -->
   <nav class="navbar">
-    <div class="container nav-inner">
-      <a href="#" class="logo">
-        <svg class="logo-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect width="28" height="28" rx="7" fill="#4f46e5"/>
-          <path d="M9 9h10M9 13h7M9 17h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
-          <circle cx="20" cy="19" r="4" fill="white"/>
-          <path d="M20 17.5v3M20 20.5h.01" stroke="#4f46e5" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        <span class="logo-text">InvoiceFollow</span>
-      </a>
-      <div class="nav-links">
-        <a href="#how">How it works</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#tool" class="btn-nav">Try free</a>
+  <div class="container nav-inner">
+    <a href="#" class="logo">
+      <!-- existing SVG -->
+      <span class="logo-text">InvoiceFollow</span>
+      <span id="proBadge" class="pro-badge hidden">PRO</span>
+    </a>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#tool" class="btn-nav" id="navCta">Try free</a>
+      <div id="userMenu" class="user-menu hidden">
+        <button id="userMenuBtn" class="user-menu-btn">
+          <span class="user-avatar">KS</span>
+          <span class="user-name">Account</span>
+          <span class="chevron">▾</span>
+        </button>
+        <div id="userDropdown" class="user-dropdown hidden">
+          <div class="dropdown-header">
+            <div class="dropdown-name">Pro Member</div>
+            <div class="dropdown-email" id="dropdownEmail">—</div>
+          </div>
+          <div class="dropdown-item">
+            <span>Plan</span>
+            <span class="dropdown-value">Pro — $9/month</span>
+          </div>
+          <div class="dropdown-item">
+            <span>Expires in</span>
+            <span class="dropdown-value" id="dropdownExpiry">—</span>
+          </div>
+          <div class="dropdown-item">
+            <span>Payment ID</span>
+            <span class="dropdown-value dropdown-mono" id="dropdownPaymentId">—</span>
+          </div>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-btn" id="logoutBtn">Sign out</button>
+        </div>
       </div>
     </div>
-  </nav>
+  </div>
+</nav>
 
   <!-- ============ HERO ============ -->
   <section class="hero">
@@ -135,6 +158,21 @@
         <p>Free for your first 3 invoices. No signup needed.</p>
         <div class="usage-counter" id="usageCounter"></div>
       </div>
+      <div id="proStatusCard" class="pro-status-card hidden">
+  <div class="pro-status-left">
+    <div class="pro-status-icon">✓</div>
+    <div>
+      <div class="pro-status-title">You're on Pro</div>
+      <div class="pro-status-sub" id="proStatusSub">Unlimited reminders active</div>
+    </div>
+  </div>
+  <div class="pro-status-right">
+    <div class="pro-status-days">
+      <div class="pro-status-days-number" id="proStatusDays">30</div>
+      <div class="pro-status-days-label">days left</div>
+    </div>
+  </div>
+</div>
 
       <div id="form-section" class="tool-card">
         <div class="input-row">
