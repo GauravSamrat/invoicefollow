@@ -580,6 +580,9 @@ function renderInvoices() {
 // ============================================
 // USER MENU — Supabase data se populate
 // ============================================
+// ============================================
+// USER MENU — Supabase data se populate
+// ============================================
 async function renderUserMenu() {
   if (!currentUser || !userProfile) {
     document.getElementById("userAvatar").textContent = "GU";
@@ -588,6 +591,7 @@ async function renderUserMenu() {
     document.getElementById("dropdownEmail").textContent = "Not signed in";
     document.getElementById("dropdownPlan").textContent = "Free";
     document.getElementById("dropdownUsage").textContent = "0 credits";
+    document.getElementById("dropdownUsage").classList.add("dropdown-usage");
     return;
   }
 
@@ -609,10 +613,14 @@ async function renderUserMenu() {
   document.getElementById("dropdownEmail").textContent = email;
   document.getElementById("dropdownPlan").textContent = subscription === "pro" ? "Pro" : "Free";
 
+  // Credits display — Pro hai toh unlimited, warna "50 credits"
+  const usageEl = document.getElementById("dropdownUsage");
+  usageEl.classList.add("dropdown-usage");
+
   if (subscription === "pro") {
-    document.getElementById("dropdownUsage").textContent = "Unlimited";
+    usageEl.textContent = "Unlimited";
   } else {
-    document.getElementById("dropdownUsage").textContent = `${credits} credits`;
+    usageEl.textContent = `${credits} credits`;
   }
 }
 
