@@ -1477,3 +1477,86 @@ footer {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ============================================
+   WHY DIFFERENT SECTION
+   ============================================ */
+
+.why {
+  padding: 5rem 0;
+  background: white;
+}
+
+.why-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+  margin-top: 3rem;
+}
+
+.why-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
+  text-align: center;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.why-card:hover {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+}
+
+.why-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 1.25rem;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.why-card:hover .why-icon {
+  background: var(--accent);
+  color: white;
+}
+
+.why-card h3 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  margin-bottom: 0.75rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.why-card p {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* Agar purane number styles hain toh unko hide karo */
+.why-number {
+  display: none;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .why-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
