@@ -189,7 +189,26 @@
   cursor: pointer;
 }
 
-.dropdown-btn:hover { background: var(--danger-soft); color: var(--danger); }
+/* Primary dropdown button — Sign up */
+.dropdown-btn-primary {
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+}
+
+.dropdown-btn-primary:hover {
+  background: var(--accent-hover);
+  color: white;
+}
+
+.dropdown-btn:hover {
+  background: var(--bg);
+}
+
+#signOutBtn:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
 
 /* ============ MAIN LAYOUT ============ */
 .dash-main {

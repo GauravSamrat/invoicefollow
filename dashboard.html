@@ -44,21 +44,26 @@
             <span class="user-name" id="userName">Guest</span>
           </button>
           <div id="userDropdown" class="user-dropdown hidden">
-            <div class="dropdown-header">
-              <div class="dropdown-name" id="dropdownName">Guest User</div>
-              <div class="dropdown-email" id="dropdownEmail">Not signed in</div>
-            </div>
-            <div class="dropdown-item">
-              <span>Plan</span>
-              <span class="dropdown-value" id="dropdownPlan">Free</span>
-            </div>
-            <div class="dropdown-item">
-              <span>Credits</span>
-              <span class="dropdown-value dropdown-usage" id="dropdownUsage">10 credits</span>
-            </div>
-            <div class="dropdown-divider"></div>
-            <button class="dropdown-btn" id="signOutBtn">Sign out</button>
-          </div>
+  <div class="dropdown-header">
+    <div class="dropdown-name" id="dropdownName">Guest User</div>
+    <div class="dropdown-email" id="dropdownEmail">Not signed in</div>
+  </div>
+  <div class="dropdown-item">
+    <span>Plan</span>
+    <span class="dropdown-value" id="dropdownPlan">Free</span>
+  </div>
+  <div class="dropdown-item">
+    <span>Credits</span>
+    <span class="dropdown-value dropdown-usage" id="dropdownUsage">10 credits</span>
+  </div>
+  <div class="dropdown-divider"></div>
+
+  <!-- Guest mode ke liye — Sign up -->
+  <button class="dropdown-btn dropdown-btn-primary" id="signUpBtn">Sign up to save data</button>
+
+  <!-- Logged-in user ke liye — Sign out -->
+  <button class="dropdown-btn hidden" id="signOutBtn">Sign out</button>
+</div>
         </div>
       </div>
     </div>

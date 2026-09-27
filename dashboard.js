@@ -708,6 +708,12 @@ function renderInvoices() {
 // ============================================
 // USER MENU — Guest + Logged-in dono support
 // ============================================
+// ============================================
+// USER MENU — Guest + Logged-in dono support
+// ============================================
+// ============================================
+// USER MENU — Guest + Logged-in dono support
+// ============================================
 async function renderUserMenu() {
   const avatarEl = document.getElementById("userAvatar");
   const nameEl = document.getElementById("userName");
@@ -715,8 +721,12 @@ async function renderUserMenu() {
   const dropdownEmailEl = document.getElementById("dropdownEmail");
   const dropdownPlanEl = document.getElementById("dropdownPlan");
   const dropdownUsageEl = document.getElementById("dropdownUsage");
+  const signUpBtn = document.getElementById("signUpBtn");
+  const signOutBtn = document.getElementById("signOutBtn");
 
-  // Guest mode
+  // ============================================
+  // GUEST MODE — No signup
+  // ============================================
   if (isGuestMode) {
     avatarEl.textContent = "GU";
     nameEl.textContent = "Guest";
@@ -725,15 +735,23 @@ async function renderUserMenu() {
     dropdownPlanEl.textContent = "Free";
     dropdownUsageEl.textContent = `${getGuestCredits()} credits`;
     dropdownUsageEl.classList.add("dropdown-usage");
+
+    // Guest — Sign up button dikhao, Sign out hatao
+    if (signUpBtn) signUpBtn.classList.remove("hidden");
+    if (signOutBtn) signOutBtn.classList.add("hidden");
+
     return;
   }
 
-  // Logged-in user
+  // ============================================
+  // LOGGED-IN USER
+  // ============================================
   const name = userProfile.full_name || "User";
   const email = userProfile.email || "—";
   const credits = userProfile.credits || 0;
   const subscription = userProfile.subscription || "free";
 
+  // Initials banao (e.g., "Kumar Gaurav Samrat" → "KG")
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -741,13 +759,16 @@ async function renderUserMenu() {
     .slice(0, 2)
     .toUpperCase();
 
+  // Avatar aur naam
   avatarEl.textContent = initials;
   nameEl.textContent = name.split(" ")[0] || "Account";
+
+  // Dropdown details
   dropdownNameEl.textContent = name;
   dropdownEmailEl.textContent = email;
   dropdownPlanEl.textContent = subscription === "pro" ? "Pro" : "Free";
 
-  // Usage — Pro = unlimited, BYOK = unlimited, else credits
+  // Credits display — Pro / BYOK / Regular
   if (subscription === "pro") {
     dropdownUsageEl.textContent = "Unlimited";
   } else if (hasAnyApiKey()) {
@@ -756,6 +777,10 @@ async function renderUserMenu() {
     dropdownUsageEl.textContent = `${credits} credits`;
   }
   dropdownUsageEl.classList.add("dropdown-usage");
+
+  // Logged-in — Sign out button dikhao, Sign up hatao
+  if (signUpBtn) signUpBtn.classList.add("hidden");
+  if (signOutBtn) signOutBtn.classList.remove("hidden");
 }
 
 // ============================================
@@ -771,6 +796,9 @@ async function refreshAll() {
 
 // ============================================
 // EVENT LISTENERS
+// ============================================
+// ============================================
+// EVENT LISTENERS — Saare
 // ============================================
 // ============================================
 // EVENT LISTENERS — Saare
@@ -797,9 +825,11 @@ function attachEventListeners() {
 
   // ---------- Detail Modal ----------
   const closeDetailBtn = document.getElementById("closeDetailModal");
-  if (closeDetailBtn) closeDetailBtn.addEventListener("click", () => {
-    document.getElementById("detailModal").classList.add("hidden");
-  });
+  if (closeDetailBtn) {
+    closeDetailBtn.addEventListener("click", () => {
+      document.getElementById("detailModal").classList.add("hidden");
+    });
+  }
 
   // ---------- Settings ----------
   document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
@@ -811,29 +841,38 @@ function attachEventListeners() {
   // ---------- API Key Modal ----------
   const apiKeyBtn = document.getElementById("apiKeyBtn");
   if (apiKeyBtn) apiKeyBtn.addEventListener("click", openApiKeyModal);
+
   const closeApiKeyBtn = document.getElementById("closeApiKeyModal");
   if (closeApiKeyBtn) closeApiKeyBtn.addEventListener("click", closeApiKeyModal);
+
   const cancelApiKeyBtn = document.getElementById("cancelApiKey");
   if (cancelApiKeyBtn) cancelApiKeyBtn.addEventListener("click", closeApiKeyModal);
+
   const saveApiKeyBtn = document.getElementById("saveApiKey");
   if (saveApiKeyBtn) saveApiKeyBtn.addEventListener("click", saveApiKeysFromModal);
 
   // ---------- Buy Credits Modal ----------
   const closeBuyCreditsBtn = document.getElementById("closeBuyCreditsModal");
-  if (closeBuyCreditsBtn) closeBuyCreditsBtn.addEventListener("click", () => {
-    document.getElementById("buyCreditsModal").classList.add("hidden");
-  });
+  if (closeBuyCreditsBtn) {
+    closeBuyCreditsBtn.addEventListener("click", () => {
+      document.getElementById("buyCreditsModal").classList.add("hidden");
+    });
+  }
 
   const openApiKeyFromBuyBtn = document.getElementById("openApiKeyFromBuyModal");
-  if (openApiKeyFromBuyBtn) openApiKeyFromBuyBtn.addEventListener("click", () => {
-    document.getElementById("buyCreditsModal").classList.add("hidden");
-    openApiKeyModal();
-  });
+  if (openApiKeyFromBuyBtn) {
+    openApiKeyFromBuyBtn.addEventListener("click", () => {
+      document.getElementById("buyCreditsModal").classList.add("hidden");
+      openApiKeyModal();
+    });
+  }
 
   const continueWithTemplatesBtn = document.getElementById("continueWithTemplates");
-  if (continueWithTemplatesBtn) continueWithTemplatesBtn.addEventListener("click", () => {
-    document.getElementById("buyCreditsModal").classList.add("hidden");
-  });
+  if (continueWithTemplatesBtn) {
+    continueWithTemplatesBtn.addEventListener("click", () => {
+      document.getElementById("buyCreditsModal").classList.add("hidden");
+    });
+  }
 
   // ---------- Reminder Modal ----------
   document.getElementById("closeReminderModal").addEventListener("click", () => {
@@ -885,19 +924,25 @@ function attachEventListeners() {
     }
   });
 
-  // ---------- Sign out ----------
-  document.getElementById("signOutBtn").addEventListener("click", async () => {
-    if (isGuestMode) {
-      if (confirm("Sign up to save your data and get 25 more credits?")) {
+  // ---------- Guest: Sign up button ----------
+  const signUpBtnEl = document.getElementById("signUpBtn");
+  if (signUpBtnEl) {
+    signUpBtnEl.addEventListener("click", () => {
+      if (confirm("Sign up to save your data and get 25 more credits?\n\nYour invoices will be carried over to your account.")) {
         window.location.href = "signup.html";
       }
-      return;
-    }
+    });
+  }
 
-    if (confirm("Sign out? Your data will sync next time you log in.")) {
-      await logout();
-    }
-  });
+  // ---------- Logged-in: Sign out button ----------
+  const signOutBtnEl = document.getElementById("signOutBtn");
+  if (signOutBtnEl) {
+    signOutBtnEl.addEventListener("click", async () => {
+      if (confirm("Sign out? Your data will sync next time you log in.")) {
+        await logout();
+      }
+    });
+  }
 
   // ---------- CSV Import ----------
   document.getElementById("importCsvBtn").addEventListener("click", openImportModal);
