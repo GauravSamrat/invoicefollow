@@ -1,29 +1,12 @@
 <!DOCTYPE html>
-<!--
-  InvoiceFollow Dashboard — Main App
-  Yeh dashboard hai jahan user invoices track karta hai
-  Features:
-  - Invoice tracking with late fees
-  - Promise tracking
-  - Deposit / milestone payments
-  - Client says paid tracker
-  - Call log
-  - Demand letter generator
-  - WhatsApp & Email reminders
-  - CSV import/export
--->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — InvoiceFollow</title>
-  
-  <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-  
-  <!-- Styles -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="dashboard.css" />
 </head>
@@ -43,31 +26,36 @@
       </a>
 
       <div class="dash-nav-actions">
+        <button id="apiKeyBtn" class="dash-icon-btn" title="AI Provider Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+          </svg>
+        </button>
         <button id="settingsBtn" class="dash-icon-btn" title="Settings">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"/>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
           </svg>
         </button>
-        
+
         <div id="userMenu" class="user-menu">
           <button id="userMenuBtn" class="user-menu-btn">
-            <span class="user-avatar" id="userAvatar">KS</span>
-            <span class="user-name" id="userName">Account</span>
+            <span class="user-avatar" id="userAvatar">GU</span>
+            <span class="user-name" id="userName">Guest</span>
           </button>
           <div id="userDropdown" class="user-dropdown hidden">
             <div class="dropdown-header">
               <div class="dropdown-name" id="dropdownName">Guest User</div>
-              <div class="dropdown-email" id="dropdownEmail">—</div>
+              <div class="dropdown-email" id="dropdownEmail">Not signed in</div>
             </div>
             <div class="dropdown-item">
-  <span>Plan</span>
-  <span class="dropdown-value" id="dropdownPlan">Free</span>
-</div>
-<div class="dropdown-item">
-  <span>Credits</span>
-  <span class="dropdown-value dropdown-usage" id="dropdownUsage">50 credits</span>
-</div>
+              <span>Plan</span>
+              <span class="dropdown-value" id="dropdownPlan">Free</span>
+            </div>
+            <div class="dropdown-item">
+              <span>Credits</span>
+              <span class="dropdown-value dropdown-usage" id="dropdownUsage">10 credits</span>
+            </div>
             <div class="dropdown-divider"></div>
             <button class="dropdown-btn" id="signOutBtn">Sign out</button>
           </div>
@@ -106,42 +94,30 @@
           <p id="actionSummary" class="section-sub">No follow-ups today. You're all caught up.</p>
         </div>
         <div class="button-group">
-  <button id="scanInvoiceBtn" class="btn-ghost">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:-2px;">
-      <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
-      <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
-      <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
-      <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
-      <line x1="7" y1="12" x2="17" y2="12"/>
-    </svg>
-    Scan Invoice
-  </button>
-
-  <button id="importSheetBtn" class="btn-ghost">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:-2px;">
-    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-    <polyline points="14 2 14 8 20 8"/>
-    <line x1="8" y1="13" x2="16" y2="13"/>
-    <line x1="8" y1="17" x2="16" y2="17"/>
-    <line x1="12" y1="11" x2="12" y2="19"/>
-  </svg>
-  Import from Sheets
-</button>
-  <button id="importCsvBtn" class="btn-ghost">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:-2px;">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
-    Import CSV
-  </button>
-  <button id="addInvoiceBtn" class="btn-primary">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px; vertical-align:-2px;">
-      <path d="M12 5v14M5 12h14"/>
-    </svg>
-    Add Invoice
-  </button>
-</div>
+          <button id="importSheetBtn" class="btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:-2px;">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <line x1="8" y1="13" x2="16" y2="13"/>
+              <line x1="8" y1="17" x2="16" y2="17"/>
+            </svg>
+            From Sheets
+          </button>
+          <button id="importCsvBtn" class="btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:6px; vertical-align:-2px;">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Import CSV
+          </button>
+          <button id="addInvoiceBtn" class="btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right:6px; vertical-align:-2px;">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            Add Invoice
+          </button>
+        </div>
       </div>
 
       <div id="todayActions" class="action-list"></div>
@@ -248,7 +224,7 @@
           <span>Notes (optional)</span>
           <textarea id="fNotes" rows="2" placeholder="Client usually pays late"></textarea>
         </label>
-        
+
         <!-- Late Fee Fields -->
         <div class="form-row">
           <label>
@@ -266,7 +242,7 @@
             <input type="number" id="fLateFeeValue" placeholder="e.g. 2 or 500" min="0" step="0.1" />
           </label>
         </div>
-        
+
         <!-- Payment Structure -->
         <label>
           <span>Payment Structure</span>
@@ -277,7 +253,7 @@
             <option value="custom">Custom</option>
           </select>
         </label>
-        
+
         <!-- Deposit Fields (conditional) -->
         <div id="depositFields" class="hidden">
           <div class="form-row">
@@ -323,7 +299,7 @@
       <div class="modal-body">
         <label>
           <span>Your Name</span>
-          <input type="text" id="sYourName" placeholder="Kumar Gaurav Samrat" />
+          <input type="text" id="sYourName" placeholder="Your full name" />
         </label>
         <label>
           <span>Your Email</span>
@@ -420,8 +396,6 @@
         <button id="closeImportModal" class="modal-close">×</button>
       </div>
       <div class="modal-body">
-        
-        <!-- Step 1: Upload -->
         <div id="importStep1">
           <p class="import-hint">
             Export a CSV from your accounting software (Tally, Zoho Books, QuickBooks) or Excel/Google Sheets, then upload it here.
@@ -441,8 +415,7 @@
             <a href="#" id="downloadSampleBtn" class="sample-link">Download a sample CSV</a>
           </div>
         </div>
-        
-        <!-- Step 2: Column Mapping -->
+
         <div id="importStep2" class="hidden">
           <p class="import-hint">
             Found <strong id="csvRowCount">0</strong> rows. Match each column to a field.
@@ -452,8 +425,7 @@
             <strong>Required fields:</strong> Client Name, Phone, Amount, and Due Date. Everything else is optional.
           </div>
         </div>
-        
-        <!-- Step 3: Preview -->
+
         <div id="importStep3" class="hidden">
           <p class="import-hint">
             Preview: <strong id="validCount">0</strong> valid, <strong id="invalidCount">0</strong> invalid.
@@ -463,7 +435,6 @@
           </div>
           <div id="invalidErrors" class="import-errors hidden"></div>
         </div>
-        
       </div>
       <div class="modal-footer">
         <button id="importBackBtn" class="btn-ghost hidden">← Back</button>
@@ -575,126 +546,81 @@
     </div>
   </div>
 
-  <!-- ================= SCAN INVOICE MODAL ================= -->
-<div id="scanModal" class="modal-overlay hidden">
-  <div class="modal modal-wide">
-    <div class="modal-header">
-      <h3>Scan Invoice</h3>
-      <button id="closeScanModal" class="modal-close">×</button>
-    </div>
-    <div class="modal-body">
-
-      <!-- Step 1: Upload -->
-      <div id="scanStep1">
-        <p class="import-hint">
-          Upload a photo or PDF of your invoice. Our AI will extract the details automatically.
-        </p>
-        <div id="scanDropZone" class="drop-zone">
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
-            <circle cx="12" cy="13" r="4"/>
-          </svg>
-          <div class="drop-zone-title">Drop your invoice image or PDF here</div>
-          <div class="drop-zone-sub">or click to browse · JPG, PNG, WEBP, HEIC, PDF · Max 5MB</div>
-          <input type="file" id="scanFileInput" accept="image/jpeg,image/png,image/webp,image/heic,application/pdf" hidden />
-        </div>
-        <p id="scanStatus" class="import-hint" style="text-align:center; margin-top:1rem;"></p>
+  <!-- ================= GOOGLE SHEETS IMPORT MODAL ================= -->
+  <div id="sheetModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Import from Google Sheets</h3>
+        <button id="closeSheetModal" class="modal-close">×</button>
       </div>
-
-      <!-- Step 2: Extracted Data Preview -->
-      <div id="scanStep2" class="hidden">
+      <div class="modal-body">
         <p class="import-hint">
-          Data extracted. Please review and edit any fields before saving.
+          Paste the link to your Google Sheet below. Make sure it's shared with "Anyone with the link can view".
         </p>
-        <div class="form-row">
-          <label>
-            <span>Client Name</span>
-            <input type="text" id="scClientName" />
-          </label>
-          <label>
-            <span>Client Phone</span>
-            <input type="text" id="scClientPhone" />
-          </label>
-        </div>
-        <div class="form-row">
-          <label>
-            <span>Client Email</span>
-            <input type="email" id="scClientEmail" />
-          </label>
-          <label>
-            <span>Invoice Number</span>
-            <input type="text" id="scInvoiceNumber" />
-          </label>
-        </div>
-        <div class="form-row">
-          <label>
-            <span>Amount</span>
-            <input type="number" id="scAmount" />
-          </label>
-          <label>
-            <span>Currency</span>
-            <select id="scCurrency">
-              <option value="INR">INR (₹)</option>
-              <option value="USD">USD ($)</option>
-              <option value="EUR">EUR (€)</option>
-            </select>
-          </label>
-        </div>
-        <div class="form-row">
-          <label>
-            <span>Due Date</span>
-            <input type="date" id="scDueDate" />
-          </label>
-          <label>
-            <span>Promise Date (optional)</span>
-            <input type="date" id="scPromiseDate" />
-          </label>
-        </div>
         <label>
-          <span>What was the work?</span>
-          <input type="text" id="scWork" />
+          <span>Google Sheet URL</span>
+          <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/..." />
         </label>
+        <p id="sheetStatus" class="import-hint" style="text-align:center;"></p>
       </div>
-
-    </div>
-    <div class="modal-footer">
-      <button id="scanBackBtn" class="btn-ghost hidden">← Scan Another</button>
-      <button id="cancelScan" class="btn-ghost">Cancel</button>
-      <button id="scanSaveBtn" class="btn-primary hidden">Save Invoice</button>
+      <div class="modal-footer">
+        <button id="cancelSheet" class="btn-ghost">Cancel</button>
+        <button id="sheetFetchBtn" class="btn-primary">Fetch Data</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- ================= GOOGLE SHEETS IMPORT MODAL ================= -->
-<div id="sheetModal" class="modal-overlay hidden">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>Import from Google Sheets</h3>
-      <button id="closeSheetModal" class="modal-close">×</button>
-    </div>
-    <div class="modal-body">
-      <p class="import-hint">
-        Paste the link to your Google Sheet below. Make sure it's shared with "Anyone with the link can view".
-      </p>
-      <label>
-        <span>Google Sheet URL</span>
-        <input type="url" id="sheetUrlInput" placeholder="https://docs.google.com/spreadsheets/d/..." />
-      </label>
-      <p id="sheetStatus" class="import-hint" style="text-align:center;"></p>
-    </div>
-    <div class="modal-footer">
-      <button id="cancelSheet" class="btn-ghost">Cancel</button>
-      <button id="sheetFetchBtn" class="btn-primary">Fetch Data</button>
+  <!-- ================= API KEY MODAL ================= -->
+  <div id="apiKeyModal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Connect your AI provider</h3>
+        <button id="closeApiKeyModal" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="import-hint">
+          InvoiceFollow is free forever. AI features (reminders, demand letters) run on your own API key. Add any one provider below — we'll use whichever you have.
+        </p>
+
+        <!-- Groq -->
+        <label>
+          <span>
+            <strong>Groq</strong> — fast and free
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener" style="font-size:0.75rem; margin-left:0.5rem; color:var(--accent); text-decoration:none; font-weight:600;">Get key ↗</a>
+          </span>
+          <input type="password" id="groqKeyInput" placeholder="gsk_..." />
+        </label>
+
+        <!-- Gemini -->
+        <label>
+          <span>
+            <strong>Google Gemini</strong> — free tier available
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="font-size:0.75rem; margin-left:0.5rem; color:var(--accent); text-decoration:none; font-weight:600;">Get key ↗</a>
+          </span>
+          <input type="password" id="geminiKeyInput" placeholder="AIza..." />
+        </label>
+
+        <!-- OpenAI -->
+        <label>
+          <span>
+            <strong>OpenAI</strong> — paid
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener" style="font-size:0.75rem; margin-left:0.5rem; color:var(--accent); text-decoration:none; font-weight:600;">Get key ↗</a>
+          </span>
+          <input type="password" id="openaiKeyInput" placeholder="sk-..." />
+        </label>
+
+        <p id="apiKeyStatus" class="import-hint" style="text-align:center; margin-top:1rem;"></p>
+      </div>
+      <div class="modal-footer">
+        <button id="cancelApiKey" class="btn-ghost">Cancel</button>
+        <button id="saveApiKey" class="btn-primary">Save Keys</button>
+      </div>
     </div>
   </div>
-</div>
 
   <!-- PapaParse — CSV parsing -->
-
-  <!-- Supabase JS library -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<!-- Auth helpers -->
-<script src="auth.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="dashboard.js"></script>
 </body>
