@@ -210,7 +210,7 @@
   background: white;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 1.5rem 1.5rem;
+  padding: 1.5rem 1.75rem;
   text-align: center;
   transition: all 0.2s ease;
 }
@@ -246,13 +246,8 @@
   font-weight: 500;
 }
 
-.stat-overdue .stat-value {
-  color: var(--danger);
-}
-
-.stat-paid .stat-value {
-  color: var(--success);
-}
+.stat-overdue .stat-value { color: var(--danger); }
+.stat-paid .stat-value { color: var(--success); }
 
 /* ============ SECTIONS ============ */
 .today-section, .invoices-section {
@@ -276,6 +271,7 @@
   flex: 1;
   min-width: 250px;
 }
+
 .section-header h2 {
   font-size: 1.25rem;
   font-weight: 700;
@@ -287,6 +283,27 @@
   color: var(--text-muted);
   font-size: 0.88rem;
   margin-top: 0.15rem;
+}
+
+/* ============ BUTTON GROUP ============ */
+.button-group {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.button-group .btn-ghost,
+.button-group .btn-primary {
+  font-size: 0.85rem;
+  padding: 0.55rem 0.95rem;
+  white-space: nowrap;
+}
+
+.button-group .btn-ghost svg,
+.button-group .btn-primary svg {
+  flex-shrink: 0;
 }
 
 /* ============ ACTION LIST ============ */
@@ -437,6 +454,8 @@
 .status-pending { background: var(--warning-soft); color: var(--warning); }
 .status-overdue { background: var(--danger-soft); color: var(--danger); }
 .status-paid { background: var(--success-soft); color: var(--success); }
+.status-client_says_paid { background: #dbeafe; color: #1e40af; }
+.status-deposit_pending { background: #fce7f3; color: #9d174d; }
 
 .inv-actions { display: flex; gap: 0.4rem; }
 
@@ -446,7 +465,15 @@
   padding: 3rem 1rem;
 }
 
-.empty-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.empty-icon {
+  color: var(--text-subtle);
+  margin-bottom: 1rem;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  opacity: 0.6;
+}
+
 .empty-title { font-weight: 700; font-size: 1.05rem; margin-bottom: 0.25rem; }
 .empty-sub { font-size: 0.88rem; color: var(--text-muted); }
 
@@ -480,6 +507,24 @@
 .btn-whatsapp { background: var(--whatsapp); color: white; }
 .btn-whatsapp:hover { background: #1eb855; }
 
+.btn-danger-soft {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  padding: 0.6rem 1.1rem;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-danger-soft:hover { background: var(--danger); color: white; }
+
+.btn-danger { color: var(--danger); }
+.btn-danger:hover { background: var(--danger-soft); color: var(--danger); border-color: var(--danger); }
+
 .btn-sm { padding: 0.4rem 0.75rem; font-size: 0.78rem; }
 .btn-block { width: 100%; display: flex; }
 
@@ -506,7 +551,7 @@
   box-shadow: var(--shadow-lg);
 }
 
-.modal-wide { max-width: 680px; }
+.modal-wide { max-width: 620px; }
 
 .modal-header {
   display: flex;
@@ -711,37 +756,7 @@
 /* ============ UTILITIES ============ */
 .hidden { display: none !important; }
 
-/* ============ RESPONSIVE ============ */
-@media (max-width: 900px) {
-  .stats-grid { grid-template-columns: 1fr; }
-  .form-row { grid-template-columns: 1fr; }
-}
-
-@media (max-width: 640px) {
-  .dash-main { padding: 1rem; }
-  .invoice-row {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  .section-header { flex-direction: column; align-items: stretch; }
-  .filter-bar { width: 100%; }
-  .search-input { width: 100%; }
-}
-
-/* ============================================
-   CSV IMPORT MODAL
-   ============================================ */
-
-/* Button group — Add + Import buttons ek saath */
-.button-group {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-/* Import hint text */
+/* ============ CSV IMPORT ============ */
 .import-hint {
   font-size: 0.9rem;
   color: var(--text-muted);
@@ -754,7 +769,14 @@
   font-weight: 700;
 }
 
-/* ============ DROP ZONE ============ */
+.import-hint a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.import-hint a:hover { text-decoration: underline; }
+
 .drop-zone {
   border: 2px dashed var(--border-strong);
   border-radius: var(--radius-lg);
@@ -782,9 +804,7 @@
   margin-bottom: 0.75rem;
 }
 
-.drop-zone.dragover svg {
-  color: var(--accent);
-}
+.drop-zone.dragover svg { color: var(--accent); }
 
 .drop-zone-title {
   font-size: 1rem;
@@ -798,7 +818,6 @@
   color: var(--text-subtle);
 }
 
-/* Sample download link */
 .sample-download {
   margin-top: 1rem;
   text-align: center;
@@ -813,9 +832,7 @@
   margin-left: 0.25rem;
 }
 
-.sample-link:hover {
-  text-decoration: underline;
-}
+.sample-link:hover { text-decoration: underline; }
 
 /* ============ COLUMN MAPPING ============ */
 .mapping-grid {
@@ -875,7 +892,6 @@
   background: var(--danger-soft);
 }
 
-/* Warning box */
 .import-warning {
   padding: 0.85rem 1rem;
   background: var(--warning-soft);
@@ -886,9 +902,7 @@
   line-height: 1.5;
 }
 
-.import-warning strong {
-  color: var(--warning);
-}
+.import-warning strong { color: var(--warning); }
 
 /* ============ PREVIEW TABLE ============ */
 .preview-table-wrapper {
@@ -930,17 +944,7 @@
   text-overflow: ellipsis;
 }
 
-.preview-table tr:last-child td {
-  border-bottom: none;
-}
-
-.preview-table tr.row-invalid {
-  background: var(--danger-soft);
-}
-
-.preview-table tr.row-invalid td {
-  color: var(--danger);
-}
+.preview-table tr:last-child td { border-bottom: none; }
 
 /* ============ ERROR LIST ============ */
 .import-errors {
@@ -970,124 +974,7 @@
   line-height: 1.5;
 }
 
-/* ============ RESPONSIVE ============ */
-@media (max-width: 640px) {
-  .button-group {
-    width: 100%;
-  }
-  
-  .button-group button {
-    flex: 1;
-  }
-  
-  .mapping-row {
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  
-  .mapping-arrow {
-    display: none;
-  }
-}
-
-/* ============================================
-   SVG ICON REFINEMENTS
-   ============================================ */
-
-/* Empty state icon */
-.empty-icon {
-  color: var(--text-subtle);
-  margin-bottom: 1rem;
-  display: block;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.empty-state svg.empty-icon {
-  opacity: 0.6;
-}
-
-/* All clear icon (SVG version) */
-.all-clear-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: var(--success);
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* Button arrow (nav/CTA buttons) */
-.btn-arrow {
-  margin-left: 0.4rem;
-  transition: transform 0.15s ease;
-  vertical-align: middle;
-}
-
-.btn-primary:hover .btn-arrow {
-  transform: translateX(3px);
-}
-
-.btn-large .btn-arrow {
-  margin-left: 0.5rem;
-}
-
-/* Feature icon container — landing page */
-.feature-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 10px;
-  background: var(--accent-soft);
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
-/* Drop zone icon sizing */
-.drop-zone svg {
-  color: var(--text-subtle);
-  margin-bottom: 0.75rem;
-}
-
-/* ============================================
-   ADVANCED FEATURES STYLES
-   ============================================ */
-
-/* Danger button — soft red */
-.btn-danger-soft {
-  background: var(--danger-soft);
-  color: var(--danger);
-  border: 1px solid rgba(239, 68, 68, 0.2);
-  padding: 0.6rem 1.1rem;
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-danger-soft:hover {
-  background: var(--danger);
-  color: white;
-}
-
-.btn-danger {
-  color: var(--danger);
-}
-
-.btn-danger:hover {
-  background: var(--danger-soft);
-  color: var(--danger);
-  border-color: var(--danger);
-}
-
-/* Late fee badge */
+/* ============ LATE FEE ============ */
 .late-fee-badge {
   display: inline-block;
   margin-left: 0.5rem;
@@ -1107,18 +994,7 @@
   margin-top: 0.15rem;
 }
 
-/* New status badges */
-.status-client_says_paid {
-  background: #dbeafe;
-  color: #1e40af;
-}
-
-.status-deposit_pending {
-  background: #fce7f3;
-  color: #9d174d;
-}
-
-/* Demand letter textarea */
+/* ============ DEMAND LETTER ============ */
 .demand-letter-textarea {
   font-family: 'SF Mono', Monaco, 'Courier New', monospace;
   font-size: 0.82rem;
@@ -1126,7 +1002,7 @@
   min-height: 400px;
 }
 
-/* Payment confirm info */
+/* ============ PAYMENT CONFIRM ============ */
 .payment-confirm-info {
   background: var(--bg);
   border: 1px solid var(--border);
@@ -1143,20 +1019,12 @@
   font-size: 0.88rem;
 }
 
-.payment-confirm-row:last-child {
-  border-bottom: none;
-}
+.payment-confirm-row:last-child { border-bottom: none; }
 
-.payment-confirm-label {
-  color: var(--text-muted);
-}
+.payment-confirm-label { color: var(--text-muted); }
+.payment-confirm-value { color: var(--text); font-weight: 600; }
 
-.payment-confirm-value {
-  color: var(--text);
-  font-weight: 600;
-}
-
-/* Deposit badge */
+/* ============ DEPOSIT BADGE ============ */
 .deposit-info {
   display: inline-flex;
   align-items: center;
@@ -1176,7 +1044,7 @@
   color: #9d174d;
 }
 
-/* Confirm banner */
+/* ============ CONFIRM BANNER ============ */
 .confirm-banner {
   display: flex;
   align-items: center;
@@ -1206,122 +1074,15 @@
   color: #1e40af;
 }
 
-.confirm-banner-text strong {
-  font-weight: 700;
-}
+.confirm-banner-text strong { font-weight: 700; }
 
-/* ============================================
-   OCR SCAN + SHEETS IMPORT STYLES
-   ============================================ */
-
-/* Scan modal — wider */
-.modal-wide {
-  max-width: 620px;
-}
-
-/* Scan step status text */
-#importStatus,
-#scanStatus,
-#sheetStatus {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  line-height: 1.5;
-  min-height: 1.4rem;
-}
-
-/* Camera drop zone — slightly different from CSV */
-#scanDropZone {
-  padding: 3rem 1.5rem;
-  background: linear-gradient(180deg, var(--bg) 0%, #ffffff 100%);
-}
-
-#scanDropZone svg {
-  color: var(--accent);
-  opacity: 0.8;
-}
-
-/* Import button group — 3 buttons fit */
-.button-group {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.button-group .btn-ghost,
-.button-group .btn-primary {
-  font-size: 0.85rem;
-  padding: 0.55rem 0.95rem;
-  white-space: nowrap;
-}
-
-/* Mobile responsive — buttons stack */
-@media (max-width: 900px) {
-  .button-group {
-    width: 100%;
-  }
-  .button-group button {
-    flex: 1;
-    min-width: 0;
-  }
-  .button-group .btn-ghost svg,
-.button-group .btn-primary svg {
-  flex-shrink: 0;
-}
-
-}
-
-/* Sheet URL input */
+/* ============ SHEET URL INPUT ============ */
 #sheetUrlInput {
   font-family: 'SF Mono', Monaco, monospace;
   font-size: 0.85rem;
 }
 
-/* Scanned invoice form — same styling as add form */
-#scanStep2 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-}
-
-#scanStep2 label {
-  display: block;
-  margin-bottom: 1rem;
-}
-
-#scanStep2 label > span {
-  display: block;
-  font-size: 0.82rem;
-  color: var(--text);
-  font-weight: 500;
-  margin-bottom: 0.35rem;
-}
-
-#scanStep2 input,
-#scanStep2 select {
-  width: 100%;
-  padding: 0.65rem 0.85rem;
-  background: white;
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  font-family: inherit;
-  font-size: 0.9rem;
-  outline: none;
-  transition: all 0.15s;
-}
-
-#scanStep2 input:focus,
-#scanStep2 select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-}
-
-@media (max-width: 640px) {
-  #scanStep2 .form-row {
-    grid-template-columns: 1fr;
-  }
-}
-
+/* ============ RESPONSIVE ============ */
 @media (max-width: 900px) {
   .stats-grid {
     grid-template-columns: 1fr;
@@ -1336,21 +1097,12 @@
     text-align: left;
   }
 
-  .stat-card > * {
-    margin: 0 !important;
-  }
+  .stat-card > * { margin: 0 !important; }
+  .stat-label { margin-bottom: 0 !important; }
+  .stat-value { font-size: 1.5rem; }
+  .stat-sub { display: none; }
 
-  .stat-label {
-    margin-bottom: 0 !important;
-  }
-
-  .stat-value {
-    font-size: 1.5rem;
-  }
-
-  .stat-sub {
-    display: none;
-  }
+  .form-row { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
@@ -1361,19 +1113,35 @@
 
   .button-group {
     width: 100%;
-    justify-content: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
   }
 
   .button-group button {
-    flex: 1;
-    min-width: 0;
-    padding: 0.65rem 0.75rem;
+    width: 100%;
+    padding: 0.75rem 0.5rem;
     font-size: 0.8rem;
+    justify-content: center;
   }
 
-  .button-group button svg {
-    display: none;
+  .button-group button:nth-child(3) {
+    grid-column: 1 / -1;
   }
+
+  .button-group button svg { display: none; }
+}
+
+@media (max-width: 640px) {
+  .dash-main { padding: 1rem; }
+  .invoice-row {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  .filter-bar { width: 100%; }
+  .search-input { width: 100%; }
+  .mapping-row { grid-template-columns: 1fr; gap: 0.5rem; }
+  .mapping-arrow { display: none; }
 }
 
 @media (max-width: 480px) {
@@ -1390,36 +1158,23 @@
     gap: 0;
   }
 
-  .user-name {
-    display: none;
-  }
+  .user-name { display: none; }
 
   .stats-grid {
     gap: 0.5rem;
     margin-bottom: 1.25rem;
   }
 
-  .stat-card {
-    padding: 1rem 1.25rem;
-  }
-
-  .stat-value {
-    font-size: 1.25rem;
-  }
-
-  .section-header h2 {
-    font-size: 1.15rem;
-  }
+  .stat-card { padding: 1rem 1.25rem; }
+  .stat-value { font-size: 1.25rem; }
+  .section-header h2 { font-size: 1.15rem; }
 
   .button-group button {
     padding: 0.6rem 0.5rem;
     font-size: 0.75rem;
   }
 
-  .invoices-section {
-    padding: 1.25rem;
-  }
-
+  .invoices-section,
   .today-section {
     padding: 1.25rem;
   }

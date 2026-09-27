@@ -1,41 +1,28 @@
 // ============================================
-// InvoiceFollow Dashboard — Complete Logic
-// Features:
-// - Invoice tracking with late fees
-// - Promise tracking
-// - Deposit / milestone payments
-// - Client says paid tracker
-// - Call log
-// - Demand letter generator
-// - WhatsApp & Email reminders
-// - CSV import/export
-// - OCR invoice scanning (Gemini Vision) — 3 credits
-// - Google Sheets direct import
-// - Supabase auth + multi-device sync
-// - Credits-based paywall (3 credits per AI task)
+// InvoiceFollow Dashboard — Part 1 of 3
+// Top section: state, auth, credits, helpers
 // ============================================
 
 // ============================================
-// AUTH STATE — Global variables
+// AUTH STATE
 // ============================================
-let currentUser = null;   // Supabase user object
-let userProfile = null;   // Users table ka row (credits, subscription)
+let currentUser = null;
+let userProfile = null;
+let isGuestMode = false;  // Guest mode flag
 
 // ============================================
-// APP STATE — Global variables
+// APP STATE
 // ============================================
-let invoices = [];              // Saare invoices (localStorage)
-let settings = {};              // User settings
-let currentFilter = "all";      // Filter (all/pending/overdue/paid)
-let searchQuery = "";           // Search input
-let activeInvoiceId = null;     // Currently open invoice
-let reminderMode = "whatsapp";  // Reminder channel
+let invoices = [];
+let settings = {};
+let currentFilter = "all";
+let searchQuery = "";
+let activeInvoiceId = null;
+let reminderMode = "whatsapp";
 
-// Advanced feature state
 let activeCallLogInvoiceId = null;
 let activeDemandLetterInvoiceId = null;
 let activePaymentConfirmInvoiceId = null;
-let scanData = null;            // OCR scan result
 
 // CSV import state
 let csvData = [];
@@ -48,65 +35,102 @@ let invalidRows = [];
 // ---------- Constants ----------
 const STORAGE_INVOICES = "invoicefollow_invoices";
 const STORAGE_SETTINGS = "invoicefollow_settings";
-const FREE_LIMIT = 5;             // Free plan mein max 5 invoices
-const CREDITS_PER_TASK = 3;       // Har AI task ka cost
+const STORAGE_GUEST_CREDITS = "invoicefollow_guest_credits";
+const STORAGE_USER_CREDITS = "invoicefollow_user_credits";
+const STORAGE_API_KEYS = "invoicefollow_api_keys";
+const STORAGE_MIGRATED = "invoicefollow_migrated_";
+
+const GUEST_INITIAL_CREDITS = 10;   // Guest ko 10 free credits
+const SIGNUP_BONUS_CREDITS = 15;    // Signup ke baad +15 (total 25)
+const CREDITS_PER_TASK = 1;         // Har AI task = 1 credit
 
 // ============================================
-// AUTH — Check karo user logged in hai ya nahi
+// API KEYS — User-provided, multi-provider
 // ============================================
-async function checkAuthAndLoad() {
-  // Current user Supabase se lo
-  currentUser = await getCurrentUser();
 
-  if (!currentUser) {
-    // Logged in nahi — login page pe bhejo
-    window.location.href = "login.html";
-    return false;
+function getUserApiKeys() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_API_KEYS) || "{}");
+  } catch {
+    return {};
   }
-
-  // User profile (credits, subscription) lo
-  userProfile = await getUserProfile(currentUser.id);
-
-  if (!userProfile) {
-    console.error("User profile not found in database");
-    return false;
-  }
-
-  return true;
 }
 
-// ============================================
-// CREDITS — Check aur deduct karo
-// ============================================
-
-// Credits check karo — kaafi hain ya nahi
-function hasEnoughCredits(cost = CREDITS_PER_TASK) {
-  if (isPro()) return true; // Pro user ke paas unlimited hai
-  if (!userProfile) return false;
-  return (userProfile.credits || 0) >= cost;
+function setUserApiKeys(keys) {
+  localStorage.setItem(STORAGE_API_KEYS, JSON.stringify(keys));
 }
 
-// Credits insufficient ka message dikhao
-function showInsufficientCreditsMessage() {
-  alert(
-    `Not enough credits.\n\nYou need ${CREDITS_PER_TASK} credits for this task.\n\nYour balance: ${userProfile?.credits || 0} credits.\n\nPlease buy more credits to continue.`
+function hasAnyApiKey() {
+  const keys = getUserApiKeys();
+  return !!(
+    keys.groq ||
+    keys.gemini ||
+    keys.openai ||
+    keys.grok ||
+    keys.anthropic ||
+    keys.openrouter
   );
 }
 
-// Credits deduct karo task ke baad
+// ============================================
+// CREDITS — Guest aur Logged-in dono
+// ============================================
+
+function getGuestCredits() {
+  const val = localStorage.getItem(STORAGE_GUEST_CREDITS);
+  if (val === null) {
+    localStorage.setItem(STORAGE_GUEST_CREDITS, GUEST_INITIAL_CREDITS);
+    return GUEST_INITIAL_CREDITS;
+  }
+  return parseInt(val, 10) || 0;
+}
+
+function setGuestCredits(n) {
+  localStorage.setItem(STORAGE_GUEST_CREDITS, n);
+  if (userProfile) userProfile.credits = n;
+}
+
+function getCurrentCredits() {
+  if (isGuestMode) return getGuestCredits();
+  return userProfile?.credits || 0;
+}
+
+function isPro() {
+  if (!userProfile) return false;
+  return userProfile.subscription === "pro";
+}
+
+function hasEnoughCredits(cost = CREDITS_PER_TASK) {
+  if (isPro()) return true;
+  if (hasAnyApiKey()) return true;  // BYOK = unlimited free
+  return getCurrentCredits() >= cost;
+}
+
+// Credits deduct karo
 async function deductTaskCredits(taskType, description) {
-  // Pro hai toh kuch deduct mat karo
+  // Pro = unlimited
   if (isPro()) return { success: true };
 
+  // BYOK = unlimited free (user apni key use kar raha hai)
+  if (hasAnyApiKey()) return { success: true };
+
   // Credits check karo
-  if (!userProfile || userProfile.credits < CREDITS_PER_TASK) {
+  const currentCredits = getCurrentCredits();
+  if (currentCredits < CREDITS_PER_TASK) {
     return { success: false, error: "Insufficient credits" };
   }
 
-  try {
-    // Credits deduct karo Supabase mein
-    const newBalance = userProfile.credits - CREDITS_PER_TASK;
+  const newBalance = currentCredits - CREDITS_PER_TASK;
 
+  // Guest mode — localStorage
+  if (isGuestMode) {
+    setGuestCredits(newBalance);
+    await renderUserMenu();
+    return { success: true, newBalance };
+  }
+
+  // Logged-in — Supabase
+  try {
     const { error: updateError } = await window.supabaseClient
       .from("users")
       .update({ credits: newBalance })
@@ -117,7 +141,7 @@ async function deductTaskCredits(taskType, description) {
       return { success: false, error: updateError.message };
     }
 
-    // Transaction log karo
+    // Transaction log
     await window.supabaseClient.from("credits_transactions").insert({
       user_id: currentUser.id,
       amount: -CREDITS_PER_TASK,
@@ -125,12 +149,8 @@ async function deductTaskCredits(taskType, description) {
       description: description,
     });
 
-    // Local profile update karo
     userProfile.credits = newBalance;
-
-    // User menu refresh karo
     await renderUserMenu();
-
     return { success: true, newBalance };
   } catch (err) {
     console.error("Credit deduction failed:", err);
@@ -138,26 +158,141 @@ async function deductTaskCredits(taskType, description) {
   }
 }
 
+// Insufficient credits message + signup prompt
+function showInsufficientCreditsMessage() {
+  // Guest mode — signup prompt dikhao
+  if (isGuestMode) {
+    const signupNow = confirm(
+      "You've used all your 10 free credits.\n\n" +
+      "Sign up free to get 25 more credits + multi-device sync.\n\n" +
+      "Your invoices will be carried over to your account.\n\n" +
+      "Click OK to sign up."
+    );
+    if (signupNow) {
+      window.location.href = "signup.html";
+    }
+    return;
+  }
+
+  // Logged-in but credits gone — API key ya future buy
+  const addKey = confirm(
+    `You've used all your credits (${getCurrentCredits()} left).\n\n` +
+    "Option 1: Add your own AI key (free forever)\n" +
+    "Option 2: Wait for credit packs (coming soon)\n\n" +
+    "Click OK to add your API key now."
+  );
+  if (addKey) {
+    openApiKeyModal();
+  }
+}
+
 // ============================================
-// MIGRATION — localStorage data ko Supabase mein bhejo
-// Sirf pehli baar login pe chalega
+// AUTH — Check + Guest mode support
+// ============================================
+async function checkAuthAndLoad() {
+  currentUser = await getCurrentUser();
+
+  // Guest mode — no signup
+  if (!currentUser) {
+    isGuestMode = true;
+    userProfile = {
+      full_name: "Guest",
+      email: "Not signed in",
+      credits: getGuestCredits(),
+      subscription: "guest",
+    };
+    return true;
+  }
+
+  // Logged-in user — Supabase se data
+  isGuestMode = false;
+  userProfile = await getUserProfile(currentUser.id);
+
+  if (!userProfile) {
+    console.error("User profile not found");
+    return false;
+  }
+
+  // Check karo ki user ne signup ke baad bonus credits liye ya nahi
+  await grantSignupBonusIfNeeded();
+
+  return true;
+}
+
+// Signup ke baad +15 credits grant karo (ek baar)
+async function grantSignupBonusIfNeeded() {
+  if (!currentUser || isGuestMode) return;
+
+  const bonusKey = "invoicefollow_bonus_granted_" + currentUser.id;
+  if (localStorage.getItem(bonusKey)) return;  // Already granted
+
+  try {
+    // Current credits check
+    const profile = await getUserProfile(currentUser.id);
+    if (!profile) return;
+
+    // Guest ka data migrate hone ke baad bonus do
+    const migratedKey = STORAGE_MIGRATED + currentUser.id;
+    if (!localStorage.getItem(migratedKey)) return;  // Migration baaki hai
+
+    // Bonus add karo
+    const newBalance = (profile.credits || 0) + SIGNUP_BONUS_CREDITS;
+    await window.supabaseClient
+      .from("users")
+      .update({ credits: newBalance })
+      .eq("id", currentUser.id);
+
+    // Transaction log
+    await window.supabaseClient.from("credits_transactions").insert({
+      user_id: currentUser.id,
+      amount: SIGNUP_BONUS_CREDITS,
+      task_type: "signup_bonus",
+      description: "Signup bonus credits",
+    });
+
+    userProfile.credits = newBalance;
+    localStorage.setItem(bonusKey, "true");
+  } catch (err) {
+    console.error("Bonus grant error:", err);
+  }
+}
+
+// ============================================
+// MIGRATION — localStorage → Supabase
 // ============================================
 async function migrateLocalDataToSupabase() {
-  const MIGRATED_KEY = "invoicefollow_migrated_" + currentUser.id;
-  const alreadyMigrated = localStorage.getItem(MIGRATED_KEY);
+  if (isGuestMode || !currentUser) return;
 
-  if (alreadyMigrated) return; // Pehle hi migrate ho chuka
+  const MIGRATED_KEY = STORAGE_MIGRATED + currentUser.id;
+  if (localStorage.getItem(MIGRATED_KEY)) return;
 
-  // localStorage se purane invoices lo
   const localInvoices = JSON.parse(localStorage.getItem(STORAGE_INVOICES) || "[]");
+  const localSettings = JSON.parse(localStorage.getItem(STORAGE_SETTINGS) || "{}");
 
+  // Settings sync karo (chahe invoices ho ya na ho)
+  if (Object.keys(localSettings).length > 0) {
+    try {
+      await window.supabaseClient.from("settings").upsert({
+        user_id: currentUser.id,
+        default_currency: localSettings.currency || "INR",
+        reminder_days: [
+          localSettings.days1 || 3,
+          localSettings.days2 || 7,
+          localSettings.days3 || 14,
+        ],
+        automation_mode: localSettings.automation || "guided",
+      });
+    } catch (err) {
+      console.error("Settings migration error:", err);
+    }
+  }
+
+  // Invoices migrate karo
   if (localInvoices.length === 0) {
-    // Kuch nahi migrate karna
     localStorage.setItem(MIGRATED_KEY, "true");
     return;
   }
 
-  // User se confirm karo
   const shouldMigrate = confirm(
     `We found ${localInvoices.length} invoice${localInvoices.length > 1 ? "s" : ""} in this browser. Import to your account?`
   );
@@ -167,7 +302,6 @@ async function migrateLocalDataToSupabase() {
     return;
   }
 
-  // Supabase mein bulk insert karo
   try {
     const invoicesToInsert = localInvoices.map((inv) => ({
       user_id: currentUser.id,
@@ -210,13 +344,12 @@ async function migrateLocalDataToSupabase() {
 }
 
 // ============================================
-// DATA — Load aur Save
+// DATA — Load + Save
 // ============================================
 function loadData() {
   invoices = JSON.parse(localStorage.getItem(STORAGE_INVOICES) || "[]");
   settings = JSON.parse(localStorage.getItem(STORAGE_SETTINGS) || "{}");
 
-  // Default settings agar missing
   if (!settings.yourName) settings.yourName = "";
   if (!settings.yourEmail) settings.yourEmail = "";
   if (!settings.yourPhone) settings.yourPhone = "";
@@ -235,47 +368,35 @@ function saveSettings() {
   localStorage.setItem(STORAGE_SETTINGS, JSON.stringify(settings));
 }
 
-// Pro status check karo — Supabase se
-function isPro() {
-  if (!userProfile) return false;
-  return userProfile.subscription === "pro";
-}
-
 // ============================================
 // HELPERS
 // ============================================
 
-// Currency symbol
 function getCurrencySymbol(code) {
   return { INR: "₹", USD: "$", EUR: "€" }[code] || "₹";
 }
 
-// Amount format karo (₹25,000)
 function formatAmount(amount, currency) {
   const symbol = getCurrencySymbol(currency || settings.currency);
   return symbol + Number(amount || 0).toLocaleString("en-IN");
 }
 
-// Date ko readable banao (15 Sep 2026)
 function formatDate(isoDate) {
   if (!isoDate) return "—";
   const d = new Date(isoDate);
   return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
-// Aaj ki date ISO mein
 function todayISO() {
   return new Date().toISOString().split("T")[0];
 }
 
-// Do dates ka difference (din mein)
 function daysDiff(fromISO, toISO) {
   const from = new Date(fromISO);
   const to = new Date(toISO);
   return Math.floor((to - from) / (1000 * 60 * 60 * 24));
 }
 
-// HTML escape — XSS protection
 function escapeHtml(str) {
   if (!str) return "";
   return String(str)
@@ -316,7 +437,6 @@ function calculateLateFee(inv) {
   }
 }
 
-// Total = amount + late fee
 function getTotalWithLateFee(inv) {
   return Number(inv.amount || 0) + calculateLateFee(inv);
 }
@@ -328,7 +448,6 @@ function computeStatus(inv) {
   if (inv.status === "paid") return "paid";
   if (inv.status === "client_says_paid") return "client_says_paid";
 
-  // Deposit pending check
   if ((inv.paymentStructure === "deposit_50" || inv.paymentStructure === "deposit_30" || inv.paymentStructure === "custom") && !inv.depositReceived) {
     return "deposit_pending";
   }
@@ -339,7 +458,6 @@ function computeStatus(inv) {
   return "pending";
 }
 
-// Next follow-up date calculate karo
 function computeNextFollowUp(inv) {
   if (!inv.dueDate || inv.status === "paid") return inv.dueDate || null;
   const days = [settings.days1, settings.days2, settings.days3];
@@ -351,7 +469,6 @@ function computeNextFollowUp(inv) {
   return nextDate.toISOString().split("T")[0];
 }
 
-// Aaj action lena hai ya nahi
 function isActionDueToday(inv) {
   if (inv.status === "paid") return false;
   const today = todayISO();
@@ -361,6 +478,17 @@ function isActionDueToday(inv) {
   if (nextFU && nextFU <= today) return true;
   return false;
 }
+
+// ============================================
+// END OF PART 1
+// Part 2 continues with: greeting, stats,
+// today's actions, invoices list, user menu,
+// event listeners
+// ============================================
+// ============================================
+// InvoiceFollow Dashboard — Part 2 of 3
+// Middle: rendering, user menu, event listeners
+// ============================================
 
 // ============================================
 // GREETING
@@ -578,23 +706,29 @@ function renderInvoices() {
 }
 
 // ============================================
-// USER MENU — Supabase data se populate
-// ============================================
-// ============================================
-// USER MENU — Supabase data se populate
+// USER MENU — Guest + Logged-in dono support
 // ============================================
 async function renderUserMenu() {
-  if (!currentUser || !userProfile) {
-    document.getElementById("userAvatar").textContent = "GU";
-    document.getElementById("userName").textContent = "Guest";
-    document.getElementById("dropdownName").textContent = "Guest User";
-    document.getElementById("dropdownEmail").textContent = "Not signed in";
-    document.getElementById("dropdownPlan").textContent = "Free";
-    document.getElementById("dropdownUsage").textContent = "0 credits";
-    document.getElementById("dropdownUsage").classList.add("dropdown-usage");
+  const avatarEl = document.getElementById("userAvatar");
+  const nameEl = document.getElementById("userName");
+  const dropdownNameEl = document.getElementById("dropdownName");
+  const dropdownEmailEl = document.getElementById("dropdownEmail");
+  const dropdownPlanEl = document.getElementById("dropdownPlan");
+  const dropdownUsageEl = document.getElementById("dropdownUsage");
+
+  // Guest mode
+  if (isGuestMode) {
+    avatarEl.textContent = "GU";
+    nameEl.textContent = "Guest";
+    dropdownNameEl.textContent = "Guest User";
+    dropdownEmailEl.textContent = "Not signed in";
+    dropdownPlanEl.textContent = "Free";
+    dropdownUsageEl.textContent = `${getGuestCredits()} credits`;
+    dropdownUsageEl.classList.add("dropdown-usage");
     return;
   }
 
+  // Logged-in user
   const name = userProfile.full_name || "User";
   const email = userProfile.email || "—";
   const credits = userProfile.credits || 0;
@@ -607,21 +741,21 @@ async function renderUserMenu() {
     .slice(0, 2)
     .toUpperCase();
 
-  document.getElementById("userAvatar").textContent = initials;
-  document.getElementById("userName").textContent = name.split(" ")[0] || "Account";
-  document.getElementById("dropdownName").textContent = name;
-  document.getElementById("dropdownEmail").textContent = email;
-  document.getElementById("dropdownPlan").textContent = subscription === "pro" ? "Pro" : "Free";
+  avatarEl.textContent = initials;
+  nameEl.textContent = name.split(" ")[0] || "Account";
+  dropdownNameEl.textContent = name;
+  dropdownEmailEl.textContent = email;
+  dropdownPlanEl.textContent = subscription === "pro" ? "Pro" : "Free";
 
-  // Credits display — Pro hai toh unlimited, warna "50 credits"
-  const usageEl = document.getElementById("dropdownUsage");
-  usageEl.classList.add("dropdown-usage");
-
+  // Usage — Pro = unlimited, BYOK = unlimited, else credits
   if (subscription === "pro") {
-    usageEl.textContent = "Unlimited";
+    dropdownUsageEl.textContent = "Unlimited";
+  } else if (hasAnyApiKey()) {
+    dropdownUsageEl.textContent = "Unlimited (BYOK)";
   } else {
-    usageEl.textContent = `${credits} credits`;
+    dropdownUsageEl.textContent = `${credits} credits`;
   }
+  dropdownUsageEl.classList.add("dropdown-usage");
 }
 
 // ============================================
@@ -645,6 +779,7 @@ function attachEventListeners() {
   document.getElementById("cancelAdd").addEventListener("click", closeAddModal);
   document.getElementById("saveInvoice").addEventListener("click", saveNewInvoice);
 
+  // Deposit fields conditional show
   const fPaymentStructure = document.getElementById("fPaymentStructure");
   if (fPaymentStructure) {
     fPaymentStructure.addEventListener("change", (e) => {
@@ -657,6 +792,7 @@ function attachEventListeners() {
     });
   }
 
+  // Detail modal
   document.getElementById("closeDetailModal").addEventListener("click", () => {
     document.getElementById("detailModal").classList.add("hidden");
   });
@@ -667,6 +803,12 @@ function attachEventListeners() {
   document.getElementById("cancelSettings").addEventListener("click", closeSettingsModal);
   document.getElementById("saveSettings").addEventListener("click", saveSettingsFromModal);
   document.getElementById("exportCsvBtn").addEventListener("click", exportToCSV);
+
+  // API Key modal
+  document.getElementById("apiKeyBtn").addEventListener("click", openApiKeyModal);
+  document.getElementById("closeApiKeyModal").addEventListener("click", closeApiKeyModal);
+  document.getElementById("cancelApiKey").addEventListener("click", closeApiKeyModal);
+  document.getElementById("saveApiKey").addEventListener("click", saveApiKeysFromModal);
 
   // Reminder modal
   document.getElementById("closeReminderModal").addEventListener("click", () => {
@@ -686,6 +828,7 @@ function attachEventListeners() {
     });
   });
 
+  // Search
   document.getElementById("searchInput").addEventListener("input", (e) => {
     searchQuery = e.target.value;
     renderInvoices();
@@ -707,6 +850,13 @@ function attachEventListeners() {
 
   // Sign out
   document.getElementById("signOutBtn").addEventListener("click", async () => {
+    if (isGuestMode) {
+      if (confirm("Sign up to save your data and get 25 more credits?")) {
+        window.location.href = "signup.html";
+      }
+      return;
+    }
+
     if (confirm("Sign out? Your data will sync next time you log in.")) {
       await logout();
     }
@@ -756,40 +906,7 @@ function attachEventListeners() {
   document.getElementById("cancelPaymentConfirm").addEventListener("click", closePaymentConfirmModal);
   document.getElementById("confirmPaymentBtn").addEventListener("click", confirmPaymentReceived);
 
-  // OCR Scan modal
-  document.getElementById("scanInvoiceBtn").addEventListener("click", openScanModal);
-  document.getElementById("closeScanModal").addEventListener("click", closeScanModal);
-  document.getElementById("cancelScan").addEventListener("click", closeScanModal);
-  document.getElementById("scanBackBtn").addEventListener("click", () => {
-    document.getElementById("scanStep1").classList.remove("hidden");
-    document.getElementById("scanStep2").classList.add("hidden");
-    document.getElementById("scanSaveBtn").classList.add("hidden");
-    document.getElementById("scanBackBtn").classList.add("hidden");
-    document.getElementById("scanFileInput").value = "";
-    document.getElementById("scanStatus").textContent = "";
-  });
-  document.getElementById("scanSaveBtn").addEventListener("click", saveScannedInvoice);
-
-  const scanDropZone = document.getElementById("scanDropZone");
-  const scanFileInput = document.getElementById("scanFileInput");
-  scanDropZone.addEventListener("click", () => scanFileInput.click());
-  scanDropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    scanDropZone.classList.add("dragover");
-  });
-  scanDropZone.addEventListener("dragleave", () => scanDropZone.classList.remove("dragover"));
-  scanDropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    scanDropZone.classList.remove("dragover");
-    const file = e.dataTransfer.files[0];
-    if (file) handleScanFile(file);
-  });
-  scanFileInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) handleScanFile(file);
-  });
-
-  // Google Sheets
+  // Google Sheets Import
   document.getElementById("importSheetBtn").addEventListener("click", openSheetModal);
   document.getElementById("closeSheetModal").addEventListener("click", closeSheetModal);
   document.getElementById("cancelSheet").addEventListener("click", closeSheetModal);
@@ -816,14 +933,20 @@ function attachEventListeners() {
 }
 
 // ============================================
-// ADD INVOICE — Free hai, koi credits nahi
+// END OF PART 2
+// Part 3 continues with: modals (add, detail,
+// reminder, call log, demand letter, settings),
+// API key modal, AI calls, CSV, sheets, init
+// ============================================
+// ============================================
+// InvoiceFollow Dashboard — Part 3 of 3
+// Modals, AI calls, CSV, sheets, init
+// ============================================
+
+// ============================================
+// ADD INVOICE MODAL
 // ============================================
 function openAddModal() {
-  if (!isPro() && invoices.length >= FREE_LIMIT) {
-    alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
-    return;
-  }
-
   ["fClientName", "fClientPhone", "fClientEmail", "fInvoiceNumber", "fAmount", "fDueDate", "fPromiseDate", "fWork", "fNotes", "fLateFeeValue", "fDepositAmount"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = "";
@@ -1013,22 +1136,96 @@ function openDetailModal(inv) {
 }
 
 // ============================================
-// REMINDER MODAL
+// REMINDER MODAL — AI generate + send
 // ============================================
-function openReminderModal(inv, mode) {
+async function openReminderModal(inv, mode) {
   activeInvoiceId = inv.id;
   reminderMode = mode;
-
-  const message = buildReminderMessage(inv);
 
   document.getElementById("reminderTitle").textContent =
     mode === "whatsapp" ? `WhatsApp Reminder — ${inv.clientName}` : `Email Reminder — ${inv.clientName}`;
 
-  document.getElementById("reminderMessage").value = message;
+  // Message editable area mein placeholder
+  document.getElementById("reminderMessage").value = "Generating message with AI...";
   document.getElementById("reminderModal").classList.remove("hidden");
+
+  // AI se message generate karo
+  try {
+    const message = await generateReminderMessageWithAI(inv);
+    document.getElementById("reminderMessage").value = message;
+  } catch (err) {
+    // Fallback: template-based message
+    document.getElementById("reminderMessage").value = buildFallbackReminderMessage(inv);
+  }
 }
 
-function buildReminderMessage(inv) {
+// AI se reminder message generate karo
+async function generateReminderMessageWithAI(inv) {
+  // Credits check
+  if (!hasEnoughCredits()) {
+    showInsufficientCreditsMessage();
+    throw new Error("Insufficient credits");
+  }
+
+  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
+  const lateFee = calculateLateFee(inv);
+  const yourName = settings.yourName || "Your name";
+
+  const prompt = `You are an expert at writing polite but effective payment reminder emails for freelancers.
+
+Write ONE short email (under 120 words) to a client about an overdue invoice.
+
+Situation:
+- Freelancer name: ${yourName}
+- Client name: ${inv.clientName}
+- Amount owed: ${formatAmount(inv.amount, inv.currency)}
+- Due date: ${formatDate(inv.dueDate)}
+- Overdue days: ${overdueDays}
+- Work done: ${inv.work || "services rendered"}
+${lateFee > 0 ? `- Late fee accrued: ${formatAmount(lateFee, inv.currency)}` : ""}
+
+Tone:
+${overdueDays >= 14 ? "Firm, professional, mention consequences (pause work / late fee)" : overdueDays >= 7 ? "Firm but polite, ask for payment date" : "Friendly nudge, assume oversight"}
+
+Rules:
+- Start with "Hi {client name},"
+- Include a subject line at the top
+- Don't apologize for asking
+- Give them an "out" if early stage
+- Sign off with freelancer name
+- No emojis
+- Return ONLY the email text, no JSON, no explanation
+
+Format:
+Subject: [subject line]
+
+[email body]`;
+
+  const response = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt,
+      taskType: "reminder",
+      userApiKeys: getUserApiKeys(),
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    // Credits waapas kar do agar AI fail hua
+    throw new Error(data.error || "AI generation failed");
+  }
+
+  // Credits deduct karo (success ke baad)
+  await deductTaskCredits("reminder", `Reminder for ${inv.clientName}`);
+
+  return data.text;
+}
+
+// Fallback template agar AI fail ho
+function buildFallbackReminderMessage(inv) {
   const yourName = settings.yourName || "Your name";
   const amount = formatAmount(inv.amount, inv.currency);
   const invNum = inv.invoiceNumber ? ` #${inv.invoiceNumber}` : "";
@@ -1049,10 +1246,12 @@ function buildReminderMessage(inv) {
   }
 
   const closer = overdueDays >= 14
-    ? "If I don't receive payment or a clear plan by this Friday, I'll need to pause future work. I'd rather avoid that — let me know how you'd like to proceed."
+    ? "If I don't receive payment or a clear plan by this Friday, I'll need to pause future work."
     : "Could you confirm a payment date? If there's an issue, let me know so we can sort it out.";
 
-  return `Hi ${inv.clientName},
+  return `Subject: Follow-up on Invoice${invNum}
+
+Hi ${inv.clientName},
 
 ${opening}${lateFeeLine}
 
@@ -1062,18 +1261,9 @@ Thanks,
 ${yourName}`;
 }
 
-// ============================================
-// SEND WHATSAPP — Credits cost 3
-// ============================================
 async function sendWhatsApp() {
   const inv = invoices.find(i => i.id === activeInvoiceId);
   if (!inv) return;
-
-  // Credits check karo
-  if (!hasEnoughCredits()) {
-    showInsufficientCreditsMessage();
-    return;
-  }
 
   const message = document.getElementById("reminderMessage").value;
   const phone = (inv.clientPhone || "").replace(/[^0-9]/g, "");
@@ -1082,14 +1272,7 @@ async function sendWhatsApp() {
     return;
   }
 
-  // WhatsApp kholo
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
-
-  // Credits deduct karo
-  const creditResult = await deductTaskCredits("send_reminder", `WhatsApp reminder to ${inv.clientName}`);
-  if (!creditResult.success) {
-    console.warn("Credit deduction issue:", creditResult.error);
-  }
 
   inv.remindersSent = (inv.remindersSent || 0) + 1;
   inv.lastTouchpoint = todayISO();
@@ -1098,18 +1281,9 @@ async function sendWhatsApp() {
   refreshAll();
 }
 
-// ============================================
-// SEND EMAIL — Credits cost 3
-// ============================================
 async function sendEmail() {
   const inv = invoices.find(i => i.id === activeInvoiceId);
   if (!inv) return;
-
-  // Credits check karo
-  if (!hasEnoughCredits()) {
-    showInsufficientCreditsMessage();
-    return;
-  }
 
   const message = document.getElementById("reminderMessage").value;
   const subject = inv.invoiceNumber ? `Invoice ${inv.invoiceNumber} — Follow-up` : `Invoice Follow-up`;
@@ -1123,12 +1297,6 @@ async function sendEmail() {
     window.location.href = mailto;
   } else {
     alert("Client email is missing. Message copied to clipboard — please send manually.");
-  }
-
-  // Credits deduct karo
-  const creditResult = await deductTaskCredits("send_reminder", `Email reminder to ${inv.clientName}`);
-  if (!creditResult.success) {
-    console.warn("Credit deduction issue:", creditResult.error);
   }
 
   inv.remindersSent = (inv.remindersSent || 0) + 1;
@@ -1148,7 +1316,7 @@ function copyMessage() {
 }
 
 // ============================================
-// MARK AS PAID — Free hai
+// MARK AS PAID
 // ============================================
 function markAsPaid(inv) {
   if (!confirm(`Mark payment received from ${inv.clientName}? Amount: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}`)) return;
@@ -1160,7 +1328,7 @@ function markAsPaid(inv) {
 }
 
 // ============================================
-// CALL LOG — Free hai
+// CALL LOG
 // ============================================
 function openCallLogModal(inv) {
   activeCallLogInvoiceId = inv.id;
@@ -1200,7 +1368,7 @@ function saveCallLog() {
 }
 
 // ============================================
-// CLIENT SAYS PAID — Free hai
+// CLIENT SAYS PAID
 // ============================================
 function markClientSaysPaid(inv) {
   if (!confirm(`Mark "${inv.clientName}" as "Client says paid"?\n\nYou'll be reminded to verify in 3 days.`)) return;
@@ -1238,9 +1406,95 @@ function confirmPaymentReceived() {
 }
 
 // ============================================
-// DEMAND LETTER — Credits cost 3 (agar bheja jaye)
+// DEMAND LETTER — AI generate
 // ============================================
-function buildDemandLetter(inv) {
+async function openDemandLetterModal(inv) {
+  activeDemandLetterInvoiceId = inv.id;
+  document.getElementById("demandLetterContent").value = "Generating demand letter with AI...";
+  document.getElementById("demandLetterModal").classList.remove("hidden");
+
+  try {
+    const letter = await generateDemandLetterWithAI(inv);
+    document.getElementById("demandLetterContent").value = letter;
+  } catch (err) {
+    document.getElementById("demandLetterContent").value = buildFallbackDemandLetter(inv);
+  }
+}
+
+async function generateDemandLetterWithAI(inv) {
+  if (!hasEnoughCredits()) {
+    showInsufficientCreditsMessage();
+    throw new Error("Insufficient credits");
+  }
+
+  const yourName = settings.yourName || "[Your Name]";
+  const totalDue = getTotalWithLateFee(inv);
+  const lateFee = calculateLateFee(inv);
+
+  const prompt = `Write a formal demand letter for an overdue invoice. This is the final notice before legal action.
+
+Details:
+- Sender: ${yourName}, ${settings.yourEmail || ""}, ${settings.yourPhone || ""}
+- Client: ${inv.clientName}, ${inv.clientEmail || ""}, ${inv.clientPhone || ""}
+- Invoice: ${inv.invoiceNumber || "N/A"}
+- Original amount: ${formatAmount(inv.amount, inv.currency)}
+- Due date: ${formatDate(inv.dueDate)}
+- Work: ${inv.work || "services rendered"}
+${lateFee > 0 ? `- Late fee accrued: ${formatAmount(lateFee, inv.currency)}` : ""}
+- Total now due: ${formatAmount(totalDue, inv.currency)}
+
+Requirements:
+- Formal, professional, firm tone
+- Mention previous reminders went unanswered
+- State a specific deadline (7 days from today)
+- List consequences: recovery proceedings, additional interest, legal costs
+- Provide a payment section with placeholder: [Add your payment details here]
+- End with signature block
+- No emojis
+- Return ONLY the letter text
+
+Format:
+FORMAL DEMAND FOR PAYMENT
+
+Date: [today]
+
+To:
+[Client name]
+[Client contact]
+
+Subject: FINAL NOTICE — Overdue Invoice [number] for [amount]
+
+Dear [Client name],
+
+[body...]
+
+Sincerely,
+[Your name]
+[Your contact]`;
+
+  const response = await fetch("/api/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt,
+      taskType: "demand_letter",
+      userApiKeys: getUserApiKeys(),
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || !data.success) {
+    throw new Error(data.error || "AI generation failed");
+  }
+
+  await deductTaskCredits("demand_letter", `Demand letter for ${inv.clientName}`);
+
+  return data.text;
+}
+
+// Fallback demand letter
+function buildFallbackDemandLetter(inv) {
   const yourName = settings.yourName || "[Your Name]";
   const totalDue = getTotalWithLateFee(inv);
   const today = new Date();
@@ -1250,18 +1504,14 @@ function buildDemandLetter(inv) {
   const deadlineStr = deadline.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
   const todayStr = today.toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" });
 
-  const lateFeeNote = calculateLateFee(inv) > 0
-    ? `\n\nA late fee of ${formatAmount(calculateLateFee(inv), inv.currency)} has accrued as per our original agreement.`
-    : "";
-
   return `FORMAL DEMAND FOR PAYMENT
 
 Date: ${todayStr}
 
 To:
 ${inv.clientName}
-${inv.clientEmail ? inv.clientEmail : ""}
-${inv.clientPhone ? inv.clientPhone : ""}
+${inv.clientEmail || ""}
+${inv.clientPhone || ""}
 
 Subject: FINAL NOTICE — Overdue Invoice${inv.invoiceNumber ? " #" + inv.invoiceNumber : ""} for ${formatAmount(totalDue, inv.currency)}
 
@@ -1273,23 +1523,16 @@ Invoice Details:
 - Invoice Number: ${inv.invoiceNumber || "N/A"}
 - Original Amount: ${formatAmount(inv.amount, inv.currency)}
 - Due Date: ${formatDate(inv.dueDate)}
-${inv.work ? "- Work Performed: " + inv.work : ""}${lateFeeNote}
+${inv.work ? "- Work Performed: " + inv.work : ""}
 - TOTAL AMOUNT NOW DUE: ${formatAmount(totalDue, inv.currency)}
-
-We have made several attempts to resolve this matter amicably through reminders sent on multiple occasions. As the payment remains outstanding, we are now forced to issue this formal demand.
 
 DEMAND: Full payment of ${formatAmount(totalDue, inv.currency)} is required on or before ${deadlineStr}.
 
-If payment is not received by this date, we will be left with no option but to pursue legal remedies available to us, including but not limited to:
+If payment is not received by this date, we will be left with no option but to pursue legal remedies available to us, including:
 
 1. Initiating formal recovery proceedings
 2. Seeking additional interest and legal costs
 3. Reporting the matter to relevant authorities
-
-We would strongly prefer to resolve this matter without escalation. Please treat this as a final opportunity to settle the outstanding amount.
-
-Payment can be made via:
-[Add your payment details here — bank transfer, UPI, Razorpay link, etc.]
 
 Please confirm the payment or provide a firm commitment date in writing.
 
@@ -1297,17 +1540,7 @@ Sincerely,
 
 ${yourName}
 ${settings.yourEmail || ""}
-${settings.yourPhone || ""}
-
----
-This letter is a formal demand for payment and may be used as evidence in any subsequent legal proceedings.`;
-}
-
-function openDemandLetterModal(inv) {
-  activeDemandLetterInvoiceId = inv.id;
-  const letter = buildDemandLetter(inv);
-  document.getElementById("demandLetterContent").value = letter;
-  document.getElementById("demandLetterModal").classList.remove("hidden");
+${settings.yourPhone || ""}`;
 }
 
 function closeDemandLetterModal() {
@@ -1350,12 +1583,6 @@ async function sendDemandLetterEmail() {
   const inv = invoices.find(i => i.id === activeDemandLetterInvoiceId);
   if (!inv) return;
 
-  // Credits check karo
-  if (!hasEnoughCredits()) {
-    showInsufficientCreditsMessage();
-    return;
-  }
-
   const content = document.getElementById("demandLetterContent").value;
   const subject = `FINAL NOTICE: Overdue Invoice${inv.invoiceNumber ? " #" + inv.invoiceNumber : ""}`;
 
@@ -1369,12 +1596,6 @@ async function sendDemandLetterEmail() {
   inv.lastTouchpoint = todayISO();
   saveInvoices();
 
-  // Credits deduct karo
-  const creditResult = await deductTaskCredits("demand_letter", `Demand letter for ${inv.clientName}`);
-  if (!creditResult.success) {
-    console.warn("Credit deduction issue:", creditResult.error);
-  }
-
   const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
   window.location.href = mailto;
 
@@ -1383,238 +1604,7 @@ async function sendDemandLetterEmail() {
 }
 
 // ============================================
-// OCR SCAN — Credits cost 3
-// ============================================
-function openScanModal() {
-  if (!isPro() && invoices.length >= FREE_LIMIT) {
-    alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
-    return;
-  }
-
-  scanData = null;
-  document.getElementById("scanFileInput").value = "";
-  document.getElementById("scanStep1").classList.remove("hidden");
-  document.getElementById("scanStep2").classList.add("hidden");
-  document.getElementById("scanSaveBtn").classList.add("hidden");
-  document.getElementById("scanBackBtn").classList.add("hidden");
-  document.getElementById("scanStatus").textContent = "";
-
-  document.getElementById("scanModal").classList.remove("hidden");
-}
-
-function closeScanModal() {
-  document.getElementById("scanModal").classList.add("hidden");
-  scanData = null;
-}
-
-async function handleScanFile(file) {
-  // Credits check karo — 3 credits chahiye
-  if (!hasEnoughCredits()) {
-    showInsufficientCreditsMessage();
-    return;
-  }
-
-  if (file.size > 5 * 1024 * 1024) {
-    alert("File is too large. Please upload a file under 5MB.");
-    return;
-  }
-
-  const statusEl = document.getElementById("scanStatus");
-  statusEl.textContent = "Uploading and scanning... This may take 10-20 seconds.";
-
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    const base64 = e.target.result.split(",")[1];
-    const mimeType = file.type;
-
-    try {
-      const response = await fetch("/api/scan-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mimeType }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok || !data.success) {
-        statusEl.textContent = "";
-        alert("Scan failed: " + (data.error || "Unknown error"));
-        return;
-      }
-
-      scanData = data.data;
-      fillScanForm(scanData);
-
-      // Credits deduct karo — scan successful
-      const creditResult = await deductTaskCredits("scan_invoice", `Scanned invoice for ${data.data.clientName}`);
-      if (!creditResult.success) {
-        console.warn("Credit deduction issue:", creditResult.error);
-      }
-
-      document.getElementById("scanStep1").classList.add("hidden");
-      document.getElementById("scanStep2").classList.remove("hidden");
-      document.getElementById("scanSaveBtn").classList.remove("hidden");
-      document.getElementById("scanBackBtn").classList.remove("hidden");
-      statusEl.textContent = "";
-    } catch (err) {
-      statusEl.textContent = "";
-      alert("Scan error: " + err.message);
-    }
-  };
-
-  reader.readAsDataURL(file);
-}
-
-function fillScanForm(data) {
-  document.getElementById("scClientName").value = data.clientName || "";
-  document.getElementById("scClientPhone").value = data.clientPhone || "";
-  document.getElementById("scClientEmail").value = data.clientEmail || "";
-  document.getElementById("scInvoiceNumber").value = data.invoiceNumber || "";
-  document.getElementById("scAmount").value = data.amount || "";
-  document.getElementById("scCurrency").value = data.currency || settings.currency || "INR";
-  document.getElementById("scDueDate").value = data.dueDate || "";
-  document.getElementById("scPromiseDate").value = "";
-  document.getElementById("scWork").value = data.work || "";
-}
-
-function saveScannedInvoice() {
-  const clientName = document.getElementById("scClientName").value.trim();
-  const clientPhone = document.getElementById("scClientPhone").value.trim();
-  const clientEmail = document.getElementById("scClientEmail").value.trim();
-  const invoiceNumber = document.getElementById("scInvoiceNumber").value.trim();
-  const amount = document.getElementById("scAmount").value;
-  const currency = document.getElementById("scCurrency").value;
-  const dueDate = document.getElementById("scDueDate").value;
-  const promiseDate = document.getElementById("scPromiseDate").value;
-  const work = document.getElementById("scWork").value.trim();
-
-  if (!clientName || !clientPhone || !amount || !dueDate) {
-    alert("Client name, phone, amount, and due date are required.");
-    return;
-  }
-
-  const newInvoice = {
-    id: "inv_" + Date.now(),
-    clientName,
-    clientPhone,
-    clientEmail,
-    invoiceNumber,
-    amount: Number(amount),
-    currency,
-    dueDate,
-    promiseDate: promiseDate || null,
-    work,
-    notes: "",
-    status: "pending",
-    remindersSent: 0,
-    lastTouchpoint: null,
-    createdAt: todayISO(),
-    paidAt: null,
-    lateFeeType: null,
-    lateFeeValue: 0,
-    paymentStructure: "full",
-    depositAmount: 0,
-    depositReceived: false,
-    callLogs: [],
-    clientSaysPaidAt: null,
-    demandLetterSentAt: null,
-  };
-
-  invoices.push(newInvoice);
-  saveInvoices();
-  closeScanModal();
-  refreshAll();
-}
-
-// ============================================
-// GOOGLE SHEETS IMPORT — Free hai
-// ============================================
-function openSheetModal() {
-  if (!isPro() && invoices.length >= FREE_LIMIT) {
-    alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
-    return;
-  }
-
-  document.getElementById("sheetUrlInput").value = "";
-  document.getElementById("sheetStatus").textContent = "";
-  document.getElementById("sheetModal").classList.remove("hidden");
-}
-
-function closeSheetModal() {
-  document.getElementById("sheetModal").classList.add("hidden");
-}
-
-async function fetchGoogleSheet() {
-  const url = document.getElementById("sheetUrlInput").value.trim();
-  const statusEl = document.getElementById("sheetStatus");
-
-  if (!url) {
-    statusEl.textContent = "Please paste a Google Sheet URL.";
-    return;
-  }
-
-  if (!url.includes("docs.google.com/spreadsheets")) {
-    statusEl.textContent = "This doesn't look like a Google Sheets URL.";
-    return;
-  }
-
-  statusEl.textContent = "Fetching your sheet...";
-
-  try {
-    const response = await fetch("/api/fetch-sheet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sheetUrl: url }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      statusEl.textContent = "";
-      alert("Could not fetch sheet: " + (data.error || "Unknown error"));
-      return;
-    }
-
-    Papa.parse(data.csv, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function (results) {
-        if (results.data.length === 0) {
-          statusEl.textContent = "Sheet is empty.";
-          return;
-        }
-
-        if (results.data.length > 500) {
-          statusEl.textContent = "Sheet has more than 500 rows. Please reduce it.";
-          return;
-        }
-
-        csvData = results.data;
-        csvHeaders = results.meta.fields || [];
-        columnMapping = {};
-        autoMapColumns();
-
-        closeSheetModal();
-
-        document.getElementById("importStep1").classList.add("hidden");
-        document.getElementById("importStep2").classList.remove("hidden");
-        document.getElementById("importStep3").classList.add("hidden");
-        document.getElementById("importNextBtn").classList.remove("hidden");
-        document.getElementById("importConfirmBtn").classList.add("hidden");
-        document.getElementById("importBackBtn").classList.add("hidden");
-
-        renderMappingUI();
-        document.getElementById("importModal").classList.remove("hidden");
-      },
-    });
-  } catch (err) {
-    statusEl.textContent = "";
-    alert("Error: " + err.message);
-  }
-}
-
-// ============================================
-// SETTINGS — Free hai
+// SETTINGS MODAL
 // ============================================
 function openSettingsModal() {
   document.getElementById("sYourName").value = settings.yourName || "";
@@ -1680,14 +1670,71 @@ function exportToCSV() {
 }
 
 // ============================================
-// CSV IMPORT — Free hai
+// API KEY MODAL — Multi-provider
 // ============================================
-function openImportModal() {
-  if (!isPro() && invoices.length >= FREE_LIMIT) {
-    alert(`Free plan supports up to ${FREE_LIMIT} invoices. Upgrade for unlimited access.`);
+function openApiKeyModal() {
+  const keys = getUserApiKeys();
+  document.getElementById("groqKeyInput").value = keys.groq || "";
+  document.getElementById("geminiKeyInput").value = keys.gemini || "";
+  document.getElementById("openaiKeyInput").value = keys.openai || "";
+  document.getElementById("apiKeyStatus").textContent = "";
+  document.getElementById("apiKeyStatus").className = "import-hint";
+  document.getElementById("apiKeyModal").classList.remove("hidden");
+}
+
+function closeApiKeyModal() {
+  document.getElementById("apiKeyModal").classList.add("hidden");
+}
+
+function saveApiKeysFromModal() {
+  const groq = document.getElementById("groqKeyInput").value.trim();
+  const gemini = document.getElementById("geminiKeyInput").value.trim();
+  const openai = document.getElementById("openaiKeyInput").value.trim();
+  const statusEl = document.getElementById("apiKeyStatus");
+
+  // Validation
+  if (groq && !groq.startsWith("gsk_")) {
+    statusEl.textContent = "Groq key should start with 'gsk_'.";
+    statusEl.className = "import-hint";
+    return;
+  }
+  if (gemini && !gemini.startsWith("AIza")) {
+    statusEl.textContent = "Gemini key should start with 'AIza'.";
+    statusEl.className = "import-hint";
+    return;
+  }
+  if (openai && !openai.startsWith("sk-")) {
+    statusEl.textContent = "OpenAI key should start with 'sk-'.";
+    statusEl.className = "import-hint";
     return;
   }
 
+  if (!groq && !gemini && !openai) {
+    statusEl.textContent = "Please enter at least one API key.";
+    statusEl.className = "import-hint";
+    return;
+  }
+
+  // Save keys
+  const keys = {};
+  if (groq) keys.groq = groq;
+  if (gemini) keys.gemini = gemini;
+  if (openai) keys.openai = openai;
+  setUserApiKeys(keys);
+
+  statusEl.textContent = "Saved! You now have unlimited free AI tasks.";
+  statusEl.className = "import-hint success";
+
+  setTimeout(async () => {
+    closeApiKeyModal();
+    await renderUserMenu();
+  }, 1500);
+}
+
+// ============================================
+// CSV IMPORT
+// ============================================
+function openImportModal() {
   csvData = [];
   csvHeaders = [];
   columnMapping = {};
@@ -2061,35 +2108,16 @@ function goToStep(step) {
 }
 
 function importGoBack() {
-  if (importStep === 2) {
-    goToStep(1);
-  } else if (importStep === 3) {
-    goToStep(2);
-  }
+  if (importStep === 2) goToStep(1);
+  else if (importStep === 3) goToStep(2);
 }
 
 function importGoNext() {
-  if (importStep === 2) {
-    goToStep(3);
-  }
+  if (importStep === 2) goToStep(3);
 }
 
 function confirmImport() {
   if (validInvoices.length === 0) return;
-
-  if (!isPro()) {
-    const remaining = FREE_LIMIT - invoices.length;
-    if (validInvoices.length > remaining) {
-      alert(`Free plan allows ${remaining} more invoice${remaining !== 1 ? "s" : ""}. ${validInvoices.length - remaining} will be skipped. Upgrade for unlimited access.`);
-      validInvoices = validInvoices.slice(0, remaining);
-    }
-  }
-
-  if (validInvoices.length === 0) {
-    alert("No invoices can be imported. Free plan limit reached.");
-    closeImportModal();
-    return;
-  }
 
   validInvoices.forEach(inv => invoices.push(inv));
   saveInvoices();
@@ -2115,18 +2143,99 @@ Gamma Ltd,+919876543212,gamma@example.com,INV-049,15000,INR,2026-09-20,Logo desi
 }
 
 // ============================================
-// PAGE LOAD — Auth check, migrate, load
-// Yeh sabse aakhir mein chalega jab page load ho
+// GOOGLE SHEETS IMPORT
+// ============================================
+function openSheetModal() {
+  document.getElementById("sheetUrlInput").value = "";
+  document.getElementById("sheetStatus").textContent = "";
+  document.getElementById("sheetModal").classList.remove("hidden");
+}
+
+function closeSheetModal() {
+  document.getElementById("sheetModal").classList.add("hidden");
+}
+
+async function fetchGoogleSheet() {
+  const url = document.getElementById("sheetUrlInput").value.trim();
+  const statusEl = document.getElementById("sheetStatus");
+
+  if (!url) {
+    statusEl.textContent = "Please paste a Google Sheet URL.";
+    return;
+  }
+
+  if (!url.includes("docs.google.com/spreadsheets")) {
+    statusEl.textContent = "This doesn't look like a Google Sheets URL.";
+    return;
+  }
+
+  statusEl.textContent = "Fetching your sheet...";
+
+  try {
+    const response = await fetch("/api/fetch-sheet", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheetUrl: url }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      statusEl.textContent = "";
+      alert("Could not fetch sheet: " + (data.error || "Unknown error"));
+      return;
+    }
+
+    Papa.parse(data.csv, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function (results) {
+        if (results.data.length === 0) {
+          statusEl.textContent = "Sheet is empty.";
+          return;
+        }
+
+        if (results.data.length > 500) {
+          statusEl.textContent = "Sheet has more than 500 rows. Please reduce it.";
+          return;
+        }
+
+        csvData = results.data;
+        csvHeaders = results.meta.fields || [];
+        columnMapping = {};
+        autoMapColumns();
+
+        closeSheetModal();
+
+        document.getElementById("importStep1").classList.add("hidden");
+        document.getElementById("importStep2").classList.remove("hidden");
+        document.getElementById("importStep3").classList.add("hidden");
+        document.getElementById("importNextBtn").classList.remove("hidden");
+        document.getElementById("importConfirmBtn").classList.add("hidden");
+        document.getElementById("importBackBtn").classList.add("hidden");
+
+        renderMappingUI();
+        document.getElementById("importModal").classList.remove("hidden");
+      },
+    });
+  } catch (err) {
+    statusEl.textContent = "";
+    alert("Error: " + err.message);
+  }
+}
+
+// ============================================
+// PAGE LOAD — Init
 // ============================================
 document.addEventListener("DOMContentLoaded", async () => {
-  // Step 1: Auth check karo
   const authenticated = await checkAuthAndLoad();
   if (!authenticated) return;
 
-  // Step 2: localStorage data Supabase mein migrate karo
   await migrateLocalDataToSupabase();
 
-  // Step 3: Data load aur UI render karo
+  // Guest mode ke baad bonus check karo
+  await grantSignupBonusIfNeeded();
+
   loadData();
   updateGreeting();
   renderStats();
