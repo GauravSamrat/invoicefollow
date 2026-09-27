@@ -2631,5 +2631,30 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderInvoices();
   await renderUserMenu();
   attachEventListeners();
+
+  // ⚠️ YEH ADD KARO — URL parameter check
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("buy") === "credits") {
+    // Thoda wait karo taaki UI load ho jaye
+    setTimeout(() => {
+      if (isGuestMode) {
+        // Guest hai — signup prompt dikhao
+        const goSignup = confirm(
+          "Buying credits requires an account.\n\n" +
+          "Sign up free — you'll also get 15 bonus credits (25 total).\n\n" +
+          "Click OK to sign up."
+        );
+        if (goSignup) {
+          window.location.href = "signup.html";
+        }
+      } else {
+        // Logged-in — Buy Credits modal kholo
+        showBuyCreditsModal();
+      }
+
+      // URL se parameter hatao (clean URL)
+      window.history.replaceState({}, "", "dashboard.html");
+    }, 500);
+  }
 });
 
