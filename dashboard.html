@@ -652,38 +652,60 @@
   </div>
 
   <!-- ================= BUY CREDITS MODAL ================= -->
+<!-- ================= BUY CREDITS MODAL ================= -->
 <div id="buyCreditsModal" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
-      <h3>You're out of AI credits</h3>
+      <h3 id="buyCreditsTitle">Get AI Credits</h3>
       <button id="closeBuyCreditsModal" class="modal-close">×</button>
     </div>
     <div class="modal-body">
-      <p class="import-hint">
-        Continue with <strong>template-based reminders (always free)</strong>, or choose one:
+      <p class="import-hint" id="buyCreditsHint">
+        Pick a credit pack. Credits never expire — use them whenever you need AI.
       </p>
 
-      <!-- Option 1: Buy Credits -->
-      <div class="credit-option">
-        <div class="credit-option-header">
-          <strong>💳 Buy Credits</strong>
-          <span class="credit-option-badge">Coming soon</span>
+      <!-- Credit Packs -->
+      <div class="credit-packs">
+        <div class="credit-pack" data-credits="50" data-amount="50">
+          <div class="credit-pack-credits">50</div>
+          <div class="credit-pack-label">credits</div>
+          <div class="credit-pack-price">₹50</div>
+          <div class="credit-pack-value">₹1 per credit</div>
         </div>
-        <p class="credit-option-desc">₹50 → 50 credits · ₹200 → 250 credits · ₹500 → 700 credits</p>
-        <button class="btn-ghost btn-block" disabled>Buy now (Razorpay integration coming)</button>
+
+        <div class="credit-pack credit-pack-popular" data-credits="250" data-amount="200">
+          <div class="credit-pack-badge">Best value</div>
+          <div class="credit-pack-credits">250</div>
+          <div class="credit-pack-label">credits</div>
+          <div class="credit-pack-price">₹200</div>
+          <div class="credit-pack-value">₹0.80 per credit</div>
+        </div>
+
+        <div class="credit-pack" data-credits="700" data-amount="500">
+          <div class="credit-pack-credits">700</div>
+          <div class="credit-pack-label">credits</div>
+          <div class="credit-pack-price">₹500</div>
+          <div class="credit-pack-value">₹0.71 per credit</div>
+        </div>
       </div>
 
-      <!-- Option 2: BYOK -->
+      <p id="buyCreditsStatus" class="import-hint" style="text-align:center; margin-top:1rem;"></p>
+
+      <div class="credit-option-divider">
+        <span>or</span>
+      </div>
+
+      <!-- BYOK Option -->
       <div class="credit-option">
         <div class="credit-option-header">
           <strong>🔑 Bring Your Own Key</strong>
           <span class="credit-option-badge credit-option-free">Free forever</span>
         </div>
-        <p class="credit-option-desc">Use your own Groq, Gemini, or OpenAI key for unlimited AI generations.</p>
-        <button id="openApiKeyFromBuyModal" class="btn-primary btn-block">Add API Key</button>
+        <p class="credit-option-desc">Use your own Groq, Gemini, or OpenAI key for unlimited AI — no credits needed.</p>
+        <button id="openApiKeyFromBuyModal" class="btn-ghost btn-block">Add API Key</button>
       </div>
 
-      <!-- Option 3: Continue with templates -->
+      <!-- Continue with templates -->
       <div class="credit-option credit-option-plain">
         <p class="credit-option-desc">
           Or keep using <strong>template-based reminders</strong> — unlimited and free forever.
@@ -695,6 +717,8 @@
 </div>
 
   <!-- PapaParse — CSV parsing -->
+   <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="auth.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>

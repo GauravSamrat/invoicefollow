@@ -1,29 +1,32 @@
 // ============================================
 // Razorpay Order Creation API
-// Yeh backend hai — Key Secret yahan safe hai
+// Credits purchase ke liye
 // ============================================
 
 export default async function handler(req, res) {
-  // Sirf POST request allow karo
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { amount, currency = "USD" } = req.body;
+  const { amount, currency = "INR", credits, userId } = req.body;
 
-  // Environment variables se keys lo (Vercel pe set hain)
+  // Validation
+  if (!amount || !credits) {
+    return res.status(400).json({ error: "Amount and credits are required" });
+  }
+
   const keyId = process.env.RAZORPAY_KEY_ID;
   const keySecret = process.env.RAZORPAY_KEY_SECRET;
 
   if (!keyId || !keySecret) {
-    return res.status(500).json({ error: "Razorpay keys not configured" });
+    return res.status(500).json({ error: "Razorpay not configured" });
   }
 
   try {
-    // Basic Auth header banao (Key ID : Key Secret)
+    // Basic Auth header
     const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
 
-    // Razorpay Orders API call karo
+    // Razorpay Orders API call
     const response = await fetch("https://api.razorpay.com/v1/orders", {
       method: "POST",
       headers: {
@@ -31,12 +34,13 @@ export default async function handler(req, res) {
         Authorization: `Basic ${auth}`,
       },
       body: JSON.stringify({
-        amount: amount * 100, // Razorpay paise/subunits mein leta hai (9 USD = 900)
+        amount: Math.round(amount * 100), // INR to paise
         currency: currency,
-        receipt: `receipt_${Date.now()}`,
+        receipt: `credits_${credits}_${Date.now()}`,
         notes: {
-          product: "InvoiceFollow Pro",
-          plan: "monthly",
+          credits: credits,
+          userId: userId || "guest",
+          product: "AI Credits",
         },
       }),
     });
@@ -50,12 +54,12 @@ export default async function handler(req, res) {
 
     const order = await response.json();
 
-    // Frontend ko order details bhejo (Key Secret NAHI bhejna!)
     return res.status(200).json({
+      success: true,
       orderId: order.id,
       amount: order.amount,
       currency: order.currency,
-      keyId: keyId, // Key ID safe hai frontend ke liye
+      keyId: keyId,
     });
   } catch (err) {
     console.error("Razorpay error:", err);

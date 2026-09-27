@@ -1413,20 +1413,164 @@ async function generateWithAI() {
 // ============================================
 // BUY CREDITS MODAL — For out of credits
 // ============================================
+// ============================================
+// BUY CREDITS MODAL + Razorpay Checkout
+// ============================================
+let selectedCreditPack = null;
+
 function showBuyCreditsModal() {
   const modal = document.getElementById("buyCreditsModal");
-  if (modal) {
-    modal.classList.remove("hidden");
-  } else {
-    // Fallback — alert if modal doesn't exist
-    const choice = confirm(
-      "You've run out of AI credits.\n\n" +
-      "Click OK to add your own API key (unlimited free).\n" +
-      "Or cancel to continue with template-based reminders (always free)."
-    );
-    if (choice) {
-      openApiKeyModal();
+  if (!modal) return;
+
+  // Reset state
+  selectedCreditPack = null;
+  const statusEl = document.getElementById("buyCreditsStatus");
+  if (statusEl) statusEl.textContent = "";
+
+  // Clear selected
+  document.querySelectorAll(".credit-pack").forEach(p => p.classList.remove("selected"));
+
+  // Guest warning
+  const hintEl = document.getElementById("buyCreditsHint");
+  if (hintEl && isGuestMode) {
+    hintEl.innerHTML = "⚠️ <strong>Sign up first</strong> to buy credits. Guest accounts cannot purchase — only BYOK.";
+  } else if (hintEl) {
+    hintEl.textContent = "Pick a credit pack. Credits never expire — use them whenever you need AI.";
+  }
+
+  // Attach pack selection listeners
+  document.querySelectorAll(".credit-pack").forEach(pack => {
+    // Remove old listeners by cloning
+    const newPack = pack.cloneNode(true);
+    pack.parentNode.replaceChild(newPack, pack);
+  });
+
+  document.querySelectorAll(".credit-pack").forEach(pack => {
+    pack.addEventListener("click", () => {
+      if (isGuestMode) {
+        alert("Please sign up first to buy credits.\n\nOr use Bring Your Own Key — free forever.");
+        return;
+      }
+      document.querySelectorAll(".credit-pack").forEach(p => p.classList.remove("selected"));
+      pack.classList.add("selected");
+      selectedCreditPack = {
+        credits: parseInt(pack.dataset.credits, 10),
+        amount: parseInt(pack.dataset.amount, 10),
+      };
+      // Auto-purchase on select
+      startRazorpayCheckout();
+    });
+  });
+
+  modal.classList.remove("hidden");
+}
+
+// Razorpay checkout start karo
+async function startRazorpayCheckout() {
+  if (!selectedCreditPack) return;
+
+  const statusEl = document.getElementById("buyCreditsStatus");
+  if (statusEl) statusEl.textContent = "Opening payment...";
+
+  try {
+    // Step 1: Order create karo
+    const orderResponse = await fetch("/api/create-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        amount: selectedCreditPack.amount,
+        currency: "INR",
+        credits: selectedCreditPack.credits,
+        userId: currentUser?.id || "guest",
+      }),
+    });
+
+    const orderData = await orderResponse.json();
+
+    if (!orderResponse.ok || !orderData.success) {
+      throw new Error(orderData.error || "Order creation failed");
     }
+
+    // Step 2: Razorpay Checkout kholo
+    const options = {
+      key: orderData.keyId,
+      amount: orderData.amount,
+      currency: orderData.currency,
+      name: "InvoiceFollow",
+      description: `${selectedCreditPack.credits} AI credits`,
+      order_id: orderData.orderId,
+      handler: function (response) {
+        // Payment success — verify karo
+        verifyPayment(
+          response.razorpay_order_id,
+          response.razorpay_payment_id,
+          response.razorpay_signature
+        );
+      },
+      prefill: {
+        name: userProfile?.full_name || "",
+        email: userProfile?.email || "",
+      },
+      theme: { color: "#4f46e5" },
+      modal: {
+        ondismiss: function () {
+          if (statusEl) statusEl.textContent = "";
+        },
+      },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+    if (statusEl) statusEl.textContent = "";
+  } catch (err) {
+    console.error("Checkout error:", err);
+    if (statusEl) statusEl.textContent = "Error: " + err.message;
+    alert("Could not start payment: " + err.message);
+  }
+}
+
+// Payment verify karo + credits add
+async function verifyPayment(orderId, paymentId, signature) {
+  const statusEl = document.getElementById("buyCreditsStatus");
+  if (statusEl) statusEl.textContent = "Verifying payment...";
+
+  try {
+    const response = await fetch("/api/verify-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        razorpay_order_id: orderId,
+        razorpay_payment_id: paymentId,
+        razorpay_signature: signature,
+        userId: currentUser?.id,
+        credits: selectedCreditPack.credits,
+      }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "Verification failed");
+    }
+
+    // Success — local profile update
+    if (userProfile) userProfile.credits = data.newBalance;
+
+    if (statusEl) {
+      statusEl.textContent = `✓ ${data.creditsAdded} credits added! New balance: ${data.newBalance}`;
+    }
+
+    // Refresh menu
+    await renderUserMenu();
+
+    // Close modal after 2 seconds
+    setTimeout(() => {
+      document.getElementById("buyCreditsModal").classList.add("hidden");
+    }, 2000);
+  } catch (err) {
+    console.error("Verify error:", err);
+    if (statusEl) statusEl.textContent = "Error: " + err.message;
+    alert("Payment verification failed. Contact support with payment ID: " + paymentId);
   }
 }
 
