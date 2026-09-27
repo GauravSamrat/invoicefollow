@@ -297,77 +297,137 @@
   </section>
 
   <!-- ================= PRICING ================= -->
-  <section class="pricing" id="pricing">
-    <div class="container">
-      <h2 class="section-title">Free. Forever.</h2>
-      <p class="section-subtitle">No credit card. No subscription. Bring your own AI key.</p>
+  <!-- ================= PRICING ================= -->
+<section class="pricing" id="pricing">
+  <div class="container">
+    <h2 class="section-title">Free to track. AI is optional.</h2>
+    <p class="section-subtitle">Track invoices forever, free. Use AI when you need it — with your own key or buy credits.</p>
 
-      <div class="pricing-grid" style="grid-template-columns: 1fr; max-width: 560px; margin: 0 auto;">
-        <div class="pricing-card pricing-featured">
-          <div class="popular-badge">100% free</div>
-          <h3>InvoiceFollow</h3>
-          <div class="price">₹0<span>forever</span></div>
-          <ul>
-            <li>Unlimited invoices</li>
-            <li>Today's Action dashboard</li>
-            <li>Promise tracking &amp; timeline</li>
-            <li>WhatsApp + email reminders</li>
-            <li>Demand letter generator</li>
-            <li>CSV import &amp; export</li>
-            <li>Google Sheets import</li>
-            <li>Multi-device sync</li>
-            <li>No ads, no tracking</li>
-          </ul>
-          <a href="dashboard.html" class="btn-primary btn-block">Start free — no signup</a>
-          <p class="pricing-note">AI features run on your own free Groq or Gemini API key.</p>
+    <div class="pricing-grid">
+
+      <!-- Free Plan -->
+      <div class="pricing-card pricing-featured">
+        <div class="popular-badge">Most popular</div>
+        <h3>Free</h3>
+        <div class="price">₹0<span>forever</span></div>
+        <ul>
+          <li><strong>Unlimited invoices</strong></li>
+          <li>Today's Action dashboard</li>
+          <li>Promise tracking &amp; timeline</li>
+          <li>WhatsApp + email reminders (templates)</li>
+          <li>Demand letter generator</li>
+          <li>CSV &amp; Sheets import/export</li>
+          <li>Multi-device sync</li>
+          <li><strong>25 free AI credits</strong></li>
+        </ul>
+        <a href="dashboard.html" class="btn-primary btn-block">Start free — no signup</a>
+        <p class="pricing-note">10 credits as guest · +15 after signup</p>
+      </div>
+
+      <!-- Credits -->
+      <div class="pricing-card">
+        <h3>AI Credits</h3>
+        <div class="price">₹50<span>for 50 credits</span></div>
+        <ul>
+          <li>1 credit = 1 AI task</li>
+          <li>Credits never expire</li>
+          <li>₹200 → 250 credits</li>
+          <li>₹500 → 700 credits</li>
+          <li>Top up when you run out</li>
+        </ul>
+        <a href="dashboard.html" class="btn-ghost btn-block">Buy credits (soon)</a>
+        <p class="pricing-note">Razorpay integration coming</p>
+      </div>
+
+      <!-- BYOK -->
+      <div class="pricing-card">
+        <h3>Bring Your Own Key</h3>
+        <div class="price">Free<span>forever</span></div>
+        <ul>
+          <li><strong>Unlimited AI tasks</strong></li>
+          <li>Groq (fastest, free tier)</li>
+          <li>Google Gemini (free tier)</li>
+          <li>OpenAI, Anthropic, Grok</li>
+          <li>Your key stays in your browser</li>
+        </ul>
+        <a href="dashboard.html" class="btn-ghost btn-block">Set up your key</a>
+        <p class="pricing-note">Zero cost to you, zero cost to us</p>
+      </div>
+    </div>
+
+    <!-- Why free -->
+    <div class="credits-explainer">
+      <h3>Why is InvoiceFollow free?</h3>
+      <div class="credits-grid">
+        <div class="credit-item">
+          <div class="credit-number">1</div>
+          <h4>Tracking is free forever</h4>
+          <p>Invoices, promises, timelines, reminders — everything that doesn't need AI is free, unlimited, forever.</p>
+        </div>
+        <div class="credit-item">
+          <div class="credit-number">2</div>
+          <h4>AI is optional</h4>
+          <p>You can use templates (free) or AI-personalized messages (1 credit each). Your choice, every time.</p>
+        </div>
+        <div class="credit-item">
+          <div class="credit-number">3</div>
+          <h4>Bring your own key, or buy credits</h4>
+          <p>Use your own Groq/Gemini key for unlimited AI free — or buy credits if you'd rather not set one up.</p>
         </div>
       </div>
     </div>
-  </section>
+  </div>
+</section>
 
   <!-- ================= FAQ ================= -->
-  <section class="faq">
-    <div class="container faq-container">
-      <h2 class="section-title">Frequently asked</h2>
+  <!-- ================= FAQ ================= -->
+<section class="faq">
+  <div class="container faq-container">
+    <h2 class="section-title">Frequently asked</h2>
 
-      <div class="faq-list">
-        <details>
-          <summary>Is it really free?</summary>
-          <p>Yes, 100% free — forever. No credit card, no subscription. InvoiceFollow is built to be a public good for Indian freelancers and small businesses.</p>
-        </details>
+    <div class="faq-list">
+      <details>
+        <summary>Is it really free?</summary>
+        <p>Yes — tracking, reminders (templates), timeline, CSV import/export — everything is free forever, unlimited, no credit card. AI-personalized messages are optional and use a credits system.</p>
+      </details>
 
-        <details>
-          <summary>How do AI features work if it's free?</summary>
-          <p>InvoiceFollow uses <strong>your own AI provider key</strong> (Groq, Gemini, OpenAI, etc.) for AI tasks like generating reminders and demand letters. Most providers have a generous free tier.</p>
-        </details>
+      <details>
+        <summary>How do AI credits work?</summary>
+        <p>You get <strong>10 free credits as a guest</strong> and <strong>+15 more when you sign up</strong>. Each AI-generated message (like a personalized reminder or demand letter) costs <strong>1 credit</strong>. Templates are always free.</p>
+      </details>
 
-        <details>
-          <summary>Do I need an API key to use InvoiceFollow?</summary>
-          <p>No. All tracking features (invoices, promises, timeline, call log, CSV import/export) work without any API key. Only AI features like reminder generation need a key.</p>
-        </details>
+      <details>
+        <summary>Can I use AI without buying credits?</summary>
+        <p>Yes — bring your own API key from <strong>Groq</strong>, <strong>Google Gemini</strong>, OpenAI, or others. Groq and Gemini offer generous free tiers. Your key stays in your browser; we never see it.</p>
+      </details>
 
-        <details>
-          <summary>Which AI provider should I use?</summary>
-          <p><strong>Groq</strong> is the fastest and has a generous free tier — best for most users. <strong>Google Gemini</strong> also has a free tier. Get a Groq key at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.</p>
-        </details>
+      <details>
+        <summary>Do I need to sign up?</summary>
+        <p>No — you can use InvoiceFollow as a guest with 10 free credits. Sign up only if you want multi-device sync, 15 bonus credits, and to save your data.</p>
+      </details>
 
-        <details>
-          <summary>Is my data safe?</summary>
-          <p>Yes. Your invoices are stored in your own account (Supabase). Your API key stays in your browser — we never see it. Everything is encrypted in transit.</p>
-        </details>
+      <details>
+        <summary>Where is my data stored?</summary>
+        <p>Your invoices stay in your browser (guest mode) or in your private account (signed-in). API keys never leave your browser. We never see your keys or your client data.</p>
+      </details>
 
-        <details>
-          <summary>What payment methods do you accept?</summary>
-          <p>InvoiceFollow is free — no payments required. If you want AI features beyond the free tier of Groq/Gemini, you pay your AI provider directly.</p>
-        </details>
+      <details>
+        <summary>What if I run out of credits?</summary>
+        <p>Three options: (1) keep using free templates, (2) buy more credits (₹50 = 50 credits), or (3) add your own API key for unlimited AI. You choose — nothing is forced.</p>
+      </details>
 
-        <details>
-          <summary>Can I cancel anytime?</summary>
-          <p>There's nothing to cancel — it's free forever. You can export your data as CSV anytime.</p>
-        </details>
-      </div>
+      <details>
+        <summary>What payment methods do you accept?</summary>
+        <p>Credit purchases go through Razorpay — all major cards, UPI, netbanking. Free features never require payment.</p>
+      </details>
+
+      <details>
+        <summary>Can I cancel anytime?</summary>
+        <p>There's nothing to cancel — no subscription. Credits never expire. You can export everything as CSV anytime.</p>
+      </details>
     </div>
-  </section>
+  </div>
+</section>
 
   <!-- ================= FINAL CTA ================= -->
   <section class="final-cta">

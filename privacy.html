@@ -4,13 +4,17 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy Policy — InvoiceFollow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
   <nav class="navbar">
     <div class="container nav-inner">
-      <a href="/" class="logo">
-        <svg class="logo-mark" width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <a href="index.html" class="logo">
+        <svg class="logo-mark" width="28" height="28" viewBox="0 0 28 28" fill="none">
           <rect width="28" height="28" rx="7" fill="#4f46e5"/>
           <path d="M9 9h10M9 13h7M9 17h10" stroke="white" stroke-width="2" stroke-linecap="round"/>
           <circle cx="20" cy="19" r="4" fill="white"/>
@@ -19,9 +23,9 @@
         <span class="logo-text">InvoiceFollow</span>
       </a>
       <div class="nav-links">
-        <a href="/">Home</a>
-        <a href="/#pricing">Pricing</a>
-        <a href="/#tool" class="btn-nav">Try free</a>
+        <a href="index.html">Home</a>
+        <a href="index.html#pricing">Pricing</a>
+        <a href="dashboard.html" class="btn-nav">Open Dashboard</a>
       </div>
     </div>
   </nav>
@@ -29,7 +33,7 @@
   <main class="legal-page">
     <div class="container legal-container">
       <h1>Privacy Policy</h1>
-      <p class="legal-updated">Last updated: September 18, 2026</p>
+      <p class="legal-updated">Last updated: September 27, 2026</p>
 
       <h2>1. Introduction</h2>
       <p>InvoiceFollow ("we", "us", "our") respects your privacy. This Privacy Policy explains how we collect, use, and protect your information when you use our Service.</p>
@@ -37,59 +41,64 @@
       <h2>2. Information We Collect</h2>
       <p><strong>Information you provide:</strong></p>
       <ul>
-        <li>Invoice details (client name, amount, due date, work description) — used only to generate emails</li>
-        <li>Your name (used in generated emails)</li>
-        <li>Email address (if you contact us or subscribe)</li>
-        <li>Payment information (processed by third-party payment providers — we never see your card details)</li>
+        <li>Invoice data (client name, amount, due date, notes) — used only to display and manage your invoices</li>
+        <li>Your name and email (if you sign up)</li>
+        <li>Payment transaction IDs from Razorpay (for credit purchases — we never see or store card details)</li>
+      </ul>
+
+      <p><strong>Stored only in your browser (never on our servers):</strong></p>
+      <ul>
+        <li><strong>AI provider API keys</strong> — if you use Bring Your Own Key (BYOK), your key is stored in your browser's localStorage and sent directly to your chosen AI provider when you generate a message. We never receive, see, or store your API key.</li>
+        <li>Guest-mode invoices and settings — until you sign up, all your data stays in your browser only</li>
       </ul>
 
       <p><strong>Information collected automatically:</strong></p>
       <ul>
         <li>Browser type and version</li>
         <li>Device information</li>
-        <li>Pages visited and time spent</li>
         <li>IP address (for security and analytics)</li>
       </ul>
 
       <h2>3. How We Use Your Information</h2>
       <ul>
-        <li>To generate payment reminder emails you request</li>
-        <li>To process payments and manage your subscription</li>
+        <li>To display and manage your invoices and reminders</li>
+        <li>To process credit purchases and manage your account</li>
         <li>To improve the Service</li>
         <li>To respond to your inquiries</li>
         <li>To prevent fraud and abuse</li>
       </ul>
 
       <h2>4. Data Storage</h2>
-      <p>Invoice details you enter are sent to our AI provider to generate emails. We do <strong>not</strong> permanently store your invoice details on our servers. Generated emails are stored only in your browser's local storage on your own device.</p>
-
-
-
-      <h2>3.5. Account and Payment Data</h2>
-<p>When you create an account, we store:</p>
-<ul>
-  <li>Your email address and name</li>
-  <li>Your credit balance and transaction history</li>
-  <li>Invoice data you enter (stored securely in your account)</li>
-  <li>Payment transaction IDs from Razorpay (we do not store card details)</li>
-</ul>
-<p>Your data is accessible only to you. You can export or delete your data anytime by contacting us.</p>
-
+      <p>Guest-mode data (invoices, settings, AI credits) is stored only in your browser's localStorage. Signed-in user data is stored securely in Supabase.</p>
+      <p>When you use AI features, the prompt you send (including invoice details and client name) is transmitted to your chosen AI provider to generate a response. We do not permanently store the prompts or responses on our servers.</p>
 
       <h2>5. Third-Party Services</h2>
-      <p>We use the following third-party services:</p>
+      <p>InvoiceFollow uses the following third-party services:</p>
       <ul>
-        <li><strong>AI provider</strong> (Groq) — for email generation</li>
-        <li><strong>Payment processor</strong> (Razorpay / Lemon Squeezy) — for handling payments</li>
-        <li><strong>Hosting</strong> (Vercel) — for serving the website</li>
+        <li><strong>Supabase</strong> — for account authentication and invoice storage (if signed up)</li>
+        <li><strong>Vercel</strong> — for hosting the website and serverless functions</li>
+        <li><strong>Razorpay</strong> — for processing credit purchases</li>
+        <li><strong>AI providers (optional):</strong> Groq, Google Gemini, OpenAI, Anthropic, xAI, OpenRouter — used only when you trigger an AI task</li>
       </ul>
-      <p>These providers have their own privacy policies.</p>
+      <p>Each provider has its own privacy policy governing their use of your data.</p>
 
       <h2>6. Cookies and Local Storage</h2>
-      <p>We use browser local storage to track your free usage limit. We do not use cookies for advertising or tracking.</p>
+      <p>We use browser localStorage to:</p>
+      <ul>
+        <li>Track your free AI credits</li>
+        <li>Store your invoices (guest mode)</li>
+        <li>Store your API keys (BYOK mode)</li>
+        <li>Remember your preferences and settings</li>
+      </ul>
+      <p>We do not use cookies for advertising or tracking. We do not sell your data to third parties.</p>
 
       <h2>7. Data Sharing</h2>
-      <p>We do <strong>not</strong> sell, rent, or share your personal information with third parties except as required to provide the Service (e.g., payment processing) or as required by law.</p>
+      <p>We do <strong>not</strong> sell, rent, or share your personal information with third parties except:</p>
+      <ul>
+        <li>When necessary to provide the Service (e.g., payment processing via Razorpay)</li>
+        <li>When you explicitly trigger an AI task (prompt sent to AI provider)</li>
+        <li>When required by law</li>
+      </ul>
 
       <h2>8. Data Security</h2>
       <p>We use industry-standard security measures to protect your data. However, no method of transmission over the internet is 100% secure. We cannot guarantee absolute security.</p>
@@ -99,27 +108,36 @@
       <ul>
         <li>Access information we hold about you</li>
         <li>Request deletion of your data</li>
-        <li>Opt out of marketing communications</li>
+        <li>Export your data as CSV at any time</li>
+        <li>Opt out of any communications</li>
         <li>Lodge a complaint with a data protection authority</li>
       </ul>
 
       <h2>10. Children's Privacy</h2>
       <p>The Service is not intended for users under 18. We do not knowingly collect information from children.</p>
 
-      <h2>11. Changes to This Policy</h2>
-      <p>We may update this Privacy Policy. Continued use of the Service after changes constitutes acceptance.</p>
+      <h2>11. AI Provider Disclosure</h2>
+      <p>When you use an AI feature (like "Generate with AI" for a reminder), the text of your prompt — including invoice details and client name — is sent to your chosen AI provider. This is necessary for the AI to generate a response.</p>
+      <ul>
+        <li><strong>If you use your own API key (BYOK):</strong> prompts are sent to your chosen provider using your key. We do not see the request or the response.</li>
+        <li><strong>If you use InvoiceFollow's default credits:</strong> prompts are sent to Groq (or another backend AI provider we use) via our servers.</li>
+      </ul>
+      <p>We recommend reviewing your AI provider's privacy policy to understand how they handle the data you send.</p>
 
-      <h2>12. Contact</h2>
-<p>For privacy concerns, contact us at:</p>
-<p>
-  <strong>Kumar Gaurav Samrat</strong><br />
-  InvoiceFollow<br />
-  Nonhi, Nahub<br />
-  Rajgir, Nalanda<br />
-  Bihar — 803116<br />
-  India<br />
-  Email: <a href="mailto:invoicefollow@gmail.com">invoicefollow@gmail.com</a>
-</p>
+      <h2>12. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. Continued use of the Service after changes constitutes acceptance of the updated policy.</p>
+
+      <h2>13. Contact</h2>
+      <p>For privacy concerns, contact us at:</p>
+      <p>
+        <strong>Kumar Gaurav Samrat</strong><br />
+        InvoiceFollow<br />
+        Nonhi, Nahub<br />
+        Rajgir, Nalanda<br />
+        Bihar — 803116<br />
+        India<br />
+        Email: <a href="mailto:invoicefollow@gmail.com">invoicefollow@gmail.com</a>
+      </p>
     </div>
   </main>
 
