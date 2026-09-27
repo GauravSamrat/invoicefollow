@@ -772,14 +772,17 @@ async function refreshAll() {
 // ============================================
 // EVENT LISTENERS
 // ============================================
+// ============================================
+// EVENT LISTENERS — Saare
+// ============================================
 function attachEventListeners() {
-  // Add Invoice
+  // ---------- Add Invoice ----------
   document.getElementById("addInvoiceBtn").addEventListener("click", openAddModal);
   document.getElementById("closeAddModal").addEventListener("click", closeAddModal);
   document.getElementById("cancelAdd").addEventListener("click", closeAddModal);
   document.getElementById("saveInvoice").addEventListener("click", saveNewInvoice);
 
-  // Deposit fields conditional show
+  // ---------- Deposit fields conditional show ----------
   const fPaymentStructure = document.getElementById("fPaymentStructure");
   if (fPaymentStructure) {
     fPaymentStructure.addEventListener("change", (e) => {
@@ -792,25 +795,47 @@ function attachEventListeners() {
     });
   }
 
-  // Detail modal
-  document.getElementById("closeDetailModal").addEventListener("click", () => {
+  // ---------- Detail Modal ----------
+  const closeDetailBtn = document.getElementById("closeDetailModal");
+  if (closeDetailBtn) closeDetailBtn.addEventListener("click", () => {
     document.getElementById("detailModal").classList.add("hidden");
   });
 
-  // Settings
+  // ---------- Settings ----------
   document.getElementById("settingsBtn").addEventListener("click", openSettingsModal);
   document.getElementById("closeSettingsModal").addEventListener("click", closeSettingsModal);
   document.getElementById("cancelSettings").addEventListener("click", closeSettingsModal);
   document.getElementById("saveSettings").addEventListener("click", saveSettingsFromModal);
   document.getElementById("exportCsvBtn").addEventListener("click", exportToCSV);
 
-  // API Key modal
-  document.getElementById("apiKeyBtn").addEventListener("click", openApiKeyModal);
-  document.getElementById("closeApiKeyModal").addEventListener("click", closeApiKeyModal);
-  document.getElementById("cancelApiKey").addEventListener("click", closeApiKeyModal);
-  document.getElementById("saveApiKey").addEventListener("click", saveApiKeysFromModal);
+  // ---------- API Key Modal ----------
+  const apiKeyBtn = document.getElementById("apiKeyBtn");
+  if (apiKeyBtn) apiKeyBtn.addEventListener("click", openApiKeyModal);
+  const closeApiKeyBtn = document.getElementById("closeApiKeyModal");
+  if (closeApiKeyBtn) closeApiKeyBtn.addEventListener("click", closeApiKeyModal);
+  const cancelApiKeyBtn = document.getElementById("cancelApiKey");
+  if (cancelApiKeyBtn) cancelApiKeyBtn.addEventListener("click", closeApiKeyModal);
+  const saveApiKeyBtn = document.getElementById("saveApiKey");
+  if (saveApiKeyBtn) saveApiKeyBtn.addEventListener("click", saveApiKeysFromModal);
 
-  // Reminder modal
+  // ---------- Buy Credits Modal ----------
+  const closeBuyCreditsBtn = document.getElementById("closeBuyCreditsModal");
+  if (closeBuyCreditsBtn) closeBuyCreditsBtn.addEventListener("click", () => {
+    document.getElementById("buyCreditsModal").classList.add("hidden");
+  });
+
+  const openApiKeyFromBuyBtn = document.getElementById("openApiKeyFromBuyModal");
+  if (openApiKeyFromBuyBtn) openApiKeyFromBuyBtn.addEventListener("click", () => {
+    document.getElementById("buyCreditsModal").classList.add("hidden");
+    openApiKeyModal();
+  });
+
+  const continueWithTemplatesBtn = document.getElementById("continueWithTemplates");
+  if (continueWithTemplatesBtn) continueWithTemplatesBtn.addEventListener("click", () => {
+    document.getElementById("buyCreditsModal").classList.add("hidden");
+  });
+
+  // ---------- Reminder Modal ----------
   document.getElementById("closeReminderModal").addEventListener("click", () => {
     document.getElementById("reminderModal").classList.add("hidden");
   });
@@ -818,7 +843,19 @@ function attachEventListeners() {
   document.getElementById("sendEmailBtn").addEventListener("click", sendEmail);
   document.getElementById("copyMessageBtn").addEventListener("click", copyMessage);
 
-  // Filter buttons
+  // ---------- Template pills ----------
+  document.querySelectorAll(".template-pill").forEach(pill => {
+    pill.addEventListener("click", () => {
+      currentTemplate = pill.dataset.template;
+      updateTemplateUI();
+
+      // Reload template message
+      const inv = invoices.find(i => i.id === activeInvoiceId);
+      if (inv) loadTemplateMessage(inv);
+    });
+  });
+
+  // ---------- Filter buttons ----------
   document.querySelectorAll(".filter-btn").forEach(btn => {
     btn.addEventListener("click", () => {
       document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
@@ -828,13 +865,13 @@ function attachEventListeners() {
     });
   });
 
-  // Search
+  // ---------- Search ----------
   document.getElementById("searchInput").addEventListener("input", (e) => {
     searchQuery = e.target.value;
     renderInvoices();
   });
 
-  // User menu dropdown
+  // ---------- User menu dropdown ----------
   document.getElementById("userMenuBtn").addEventListener("click", (e) => {
     e.stopPropagation();
     document.getElementById("userDropdown").classList.toggle("hidden");
@@ -848,7 +885,7 @@ function attachEventListeners() {
     }
   });
 
-  // Sign out
+  // ---------- Sign out ----------
   document.getElementById("signOutBtn").addEventListener("click", async () => {
     if (isGuestMode) {
       if (confirm("Sign up to save your data and get 25 more credits?")) {
@@ -862,7 +899,7 @@ function attachEventListeners() {
     }
   });
 
-  // CSV Import
+  // ---------- CSV Import ----------
   document.getElementById("importCsvBtn").addEventListener("click", openImportModal);
   document.getElementById("closeImportModal").addEventListener("click", closeImportModal);
   document.getElementById("cancelImport").addEventListener("click", closeImportModal);
@@ -871,48 +908,51 @@ function attachEventListeners() {
   document.getElementById("importConfirmBtn").addEventListener("click", confirmImport);
   document.getElementById("downloadSampleBtn").addEventListener("click", downloadSampleCSV);
 
+  // ---------- CSV drop zone ----------
   const dropZone = document.getElementById("dropZone");
   const fileInput = document.getElementById("csvFileInput");
-  dropZone.addEventListener("click", () => fileInput.click());
-  dropZone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    dropZone.classList.add("dragover");
-  });
-  dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-  dropZone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    dropZone.classList.remove("dragover");
-    const file = e.dataTransfer.files[0];
-    if (file) handleCSVFile(file);
-  });
-  fileInput.addEventListener("change", (e) => {
-    const file = e.target.files[0];
-    if (file) handleCSVFile(file);
-  });
+  if (dropZone && fileInput) {
+    dropZone.addEventListener("click", () => fileInput.click());
+    dropZone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropZone.classList.add("dragover");
+    });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) handleCSVFile(file);
+    });
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      if (file) handleCSVFile(file);
+    });
+  }
 
-  // Call Log modal
+  // ---------- Call Log Modal ----------
   document.getElementById("closeCallLogModal").addEventListener("click", closeCallLogModal);
   document.getElementById("cancelCallLog").addEventListener("click", closeCallLogModal);
   document.getElementById("saveCallLog").addEventListener("click", saveCallLog);
 
-  // Demand Letter modal
+  // ---------- Demand Letter Modal ----------
   document.getElementById("closeDemandLetterModal").addEventListener("click", closeDemandLetterModal);
   document.getElementById("copyDemandLetterBtn").addEventListener("click", copyDemandLetter);
   document.getElementById("downloadDemandLetterBtn").addEventListener("click", downloadDemandLetterPDF);
   document.getElementById("sendDemandEmailBtn").addEventListener("click", sendDemandLetterEmail);
 
-  // Payment Confirm modal
+  // ---------- Payment Confirm Modal ----------
   document.getElementById("closePaymentConfirmModal").addEventListener("click", closePaymentConfirmModal);
   document.getElementById("cancelPaymentConfirm").addEventListener("click", closePaymentConfirmModal);
   document.getElementById("confirmPaymentBtn").addEventListener("click", confirmPaymentReceived);
 
-  // Google Sheets Import
+  // ---------- Google Sheets Import ----------
   document.getElementById("importSheetBtn").addEventListener("click", openSheetModal);
   document.getElementById("closeSheetModal").addEventListener("click", closeSheetModal);
   document.getElementById("cancelSheet").addEventListener("click", closeSheetModal);
   document.getElementById("sheetFetchBtn").addEventListener("click", fetchGoogleSheet);
 
-  // Delegated events (invoice actions)
+  // ---------- Delegated events (invoice actions) ----------
   document.addEventListener("click", (e) => {
     const action = e.target.dataset.action;
     const id = e.target.dataset.id;
@@ -1138,24 +1178,210 @@ function openDetailModal(inv) {
 // ============================================
 // REMINDER MODAL — AI generate + send
 // ============================================
-async function openReminderModal(inv, mode) {
+// ============================================
+// REMINDER MODAL — Template default, AI optional
+// ============================================
+let currentTemplate = "gentle";  // Default template
+
+function openReminderModal(inv, mode) {
   activeInvoiceId = inv.id;
   reminderMode = mode;
 
   document.getElementById("reminderTitle").textContent =
     mode === "whatsapp" ? `WhatsApp Reminder — ${inv.clientName}` : `Email Reminder — ${inv.clientName}`;
 
-  // Message editable area mein placeholder
-  document.getElementById("reminderMessage").value = "Generating message with AI...";
-  document.getElementById("reminderModal").classList.remove("hidden");
+  // Reset template to gentle (ya auto-select based on overdue days)
+  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
+  if (overdueDays >= 14) currentTemplate = "final";
+  else if (overdueDays >= 7) currentTemplate = "firm";
+  else currentTemplate = "gentle";
 
-  // AI se message generate karo
+  // Update UI
+  updateTemplateUI();
+  updateAIText();
+
+  // Load template message immediately (no AI)
+  loadTemplateMessage(inv);
+
+  document.getElementById("reminderModal").classList.remove("hidden");
+}
+
+// AI button text update karo (based on credits/BYOK status)
+function updateAIText() {
+  const aiTextEl = document.getElementById("aiButtonText");
+  const aiBadgeEl = document.getElementById("aiCreditBadge");
+  const aiNoteEl = document.getElementById("aiGenerateNote");
+
+  if (!aiTextEl) return;
+
+  // BYOK user
+  if (hasAnyApiKey()) {
+    aiTextEl.textContent = "Generate with AI";
+    aiBadgeEl.textContent = "Unlimited";
+    aiBadgeEl.style.background = "rgba(16, 185, 129, 0.3)";
+    aiNoteEl.textContent = "You're using your own API key — unlimited AI generations";
+    return;
+  }
+
+  // Pro user
+  if (isPro()) {
+    aiTextEl.textContent = "Generate with AI";
+    aiBadgeEl.textContent = "Pro";
+    aiBadgeEl.style.background = "rgba(16, 185, 129, 0.3)";
+    aiNoteEl.textContent = "Pro plan — unlimited AI generations";
+    return;
+  }
+
+  // Credits user
+  const credits = getCurrentCredits();
+  aiBadgeEl.style.background = "rgba(255, 255, 255, 0.2)";
+  aiBadgeEl.textContent = "1 credit";
+
+  if (credits < 1) {
+    aiTextEl.textContent = "AI (Out of credits)";
+    aiNoteEl.textContent = `You have 0 credits. Buy credits or add your own API key.`;
+  } else {
+    aiTextEl.textContent = "Generate with AI";
+    aiNoteEl.textContent = `You have ${credits} credit${credits !== 1 ? "s" : ""} · Each AI generation costs 1 credit`;
+  }
+}
+
+// Template UI update karo
+function updateTemplateUI() {
+  document.querySelectorAll(".template-pill").forEach(pill => {
+    if (pill.dataset.template === currentTemplate) {
+      pill.classList.add("active");
+    } else {
+      pill.classList.remove("active");
+    }
+  });
+}
+
+// Load template message (no AI, instant)
+function loadTemplateMessage(inv) {
+  const message = buildTemplateMessage(inv, currentTemplate);
+  document.getElementById("reminderMessage").value = message;
+}
+
+// Template messages — 4 variants
+function buildTemplateMessage(inv, templateType) {
+  const yourName = settings.yourName || "Your name";
+  const amount = formatAmount(inv.amount, inv.currency);
+  const invNum = inv.invoiceNumber ? ` #${inv.invoiceNumber}` : "";
+  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
+  const lateFee = calculateLateFee(inv);
+  const totalDue = getTotalWithLateFee(inv);
+
+  const lateFeeLine = lateFee > 0
+    ? `\n\nAs per our agreement, a late fee of ${formatAmount(lateFee, inv.currency)} has accrued. Total due: ${formatAmount(totalDue, inv.currency)}.`
+    : "";
+
+  switch (templateType) {
+    case "gentle":
+      return `Hi ${inv.clientName},
+
+Just circling back on invoice${invNum} for ${amount} — it was due on ${formatDate(inv.dueDate)}.
+
+I know things get busy, so flagging it in case it slipped through.${lateFeeLine}
+
+Could you confirm a payment date? If there's an issue, let me know so we can sort it out.
+
+Thanks,
+${yourName}`;
+
+    case "firm":
+      return `Hi ${inv.clientName},
+
+Following up again on invoice${invNum} for ${amount}, which was due on ${formatDate(inv.dueDate)}. It's now ${overdueDays} days past due.${lateFeeLine}
+
+Could you confirm when payment will be processed? I'd appreciate a firm date.
+
+Thanks,
+${yourName}`;
+
+    case "final":
+      return `Hi ${inv.clientName},
+
+Invoice${invNum} for ${amount} is now ${overdueDays} days overdue. I haven't heard back from my previous reminders.${lateFeeLine}
+
+If I don't receive payment or a clear plan by this Friday, I'll need to pause future work. I'd rather avoid that — let me know how you'd like to proceed.
+
+Thanks,
+${yourName}`;
+
+    case "short":
+      return `Hi ${inv.clientName},
+
+Quick reminder — invoice${invNum} for ${amount} is due.${lateFeeLine}
+
+Could you process the payment this week?
+
+Thanks,
+${yourName}`;
+
+    default:
+      return buildTemplateMessage(inv, "gentle");
+  }
+}
+
+// ============================================
+// AI GENERATION — Optional, uses credits or BYOK
+// ============================================
+async function generateWithAI() {
+  const inv = invoices.find(i => i.id === activeInvoiceId);
+  if (!inv) return;
+
+  // Credits check (agar BYOK ya Pro nahi hai)
+  if (!hasAnyApiKey() && !isPro() && getCurrentCredits() < CREDITS_PER_TASK) {
+    // Buy credits / BYOK modal
+    showBuyCreditsModal();
+    return;
+  }
+
+  const messageEl = document.getElementById("reminderMessage");
+  const aiButton = document.getElementById("generateWithAIButton");
+  const aiTextEl = document.getElementById("aiButtonText");
+
+  // Button state
+  aiButton.disabled = true;
+  const originalText = aiTextEl.textContent;
+  aiTextEl.textContent = "Generating...";
+  messageEl.value = "AI is writing a personalized message...\n\nThis may take 5-10 seconds.";
+
   try {
     const message = await generateReminderMessageWithAI(inv);
-    document.getElementById("reminderMessage").value = message;
+    messageEl.value = message;
+    // Note: credits already deducted inside generateReminderMessageWithAI
+    updateAIText();  // Refresh AI button display
   } catch (err) {
-    // Fallback: template-based message
-    document.getElementById("reminderMessage").value = buildFallbackReminderMessage(inv);
+    console.error("AI generation failed:", err);
+    // Fallback to template
+    messageEl.value = buildTemplateMessage(inv, currentTemplate);
+    alert("AI generation failed. Using template instead.\n\n" + err.message);
+    // Credits NOT deducted since AI failed
+  } finally {
+    aiButton.disabled = false;
+    aiTextEl.textContent = originalText;
+  }
+}
+
+// ============================================
+// BUY CREDITS MODAL — For out of credits
+// ============================================
+function showBuyCreditsModal() {
+  const modal = document.getElementById("buyCreditsModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+  } else {
+    // Fallback — alert if modal doesn't exist
+    const choice = confirm(
+      "You've run out of AI credits.\n\n" +
+      "Click OK to add your own API key (unlimited free).\n" +
+      "Or cancel to continue with template-based reminders (always free)."
+    );
+    if (choice) {
+      openApiKeyModal();
+    }
   }
 }
 
@@ -1219,46 +1445,19 @@ Subject: [subject line]
   }
 
   // Credits deduct karo (success ke baad)
-  await deductTaskCredits("reminder", `Reminder for ${inv.clientName}`);
-
-  return data.text;
+  // Credits deduct karo (success ke baad)
+const creditResult = await deductTaskCredits("reminder", `AI reminder for ${inv.clientName}`);
+if (creditResult.source === "credits") {
+  console.log(`✓ 1 credit deducted. New balance: ${creditResult.newBalance}`);
+} else if (creditResult.source === "byok") {
+  console.log("✓ BYOK user — no credits deducted");
+} else if (creditResult.source === "pro") {
+  console.log("✓ Pro user — unlimited");
+} else if (!creditResult.success) {
+  console.warn("⚠ Credit deduction failed:", creditResult.error);
 }
 
-// Fallback template agar AI fail ho
-function buildFallbackReminderMessage(inv) {
-  const yourName = settings.yourName || "Your name";
-  const amount = formatAmount(inv.amount, inv.currency);
-  const invNum = inv.invoiceNumber ? ` #${inv.invoiceNumber}` : "";
-  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
-
-  let opening = `Just circling back on invoice${invNum} for ${amount} — it was due on ${formatDate(inv.dueDate)}.`;
-  if (overdueDays >= 7) {
-    opening = `Following up again on invoice${invNum} for ${amount}, which was due on ${formatDate(inv.dueDate)}. It's now ${overdueDays} days past due.`;
-  }
-  if (overdueDays >= 14) {
-    opening = `Invoice${invNum} for ${amount} is now ${overdueDays} days overdue. I haven't heard back from my previous emails.`;
-  }
-
-  const lateFee = calculateLateFee(inv);
-  let lateFeeLine = "";
-  if (lateFee > 0) {
-    lateFeeLine = `\n\nAs per our agreement, a late fee of ${formatAmount(lateFee, inv.currency)} has accrued. Total due: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}.`;
-  }
-
-  const closer = overdueDays >= 14
-    ? "If I don't receive payment or a clear plan by this Friday, I'll need to pause future work."
-    : "Could you confirm a payment date? If there's an issue, let me know so we can sort it out.";
-
-  return `Subject: Follow-up on Invoice${invNum}
-
-Hi ${inv.clientName},
-
-${opening}${lateFeeLine}
-
-${closer}
-
-Thanks,
-${yourName}`;
+  return data.text;
 }
 
 async function sendWhatsApp() {
@@ -2244,3 +2443,4 @@ document.addEventListener("DOMContentLoaded", async () => {
   await renderUserMenu();
   attachEventListeners();
 });
+

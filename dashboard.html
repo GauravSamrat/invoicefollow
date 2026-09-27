@@ -363,30 +363,58 @@
   </div>
 
   <!-- ================= REMINDER MODAL ================= -->
-  <div id="reminderModal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
-        <h3 id="reminderTitle">Send Reminder</h3>
-        <button id="closeReminderModal" class="modal-close">×</button>
-      </div>
-      <div class="modal-body">
-        <label>
-          <span>Message preview (editable)</span>
-          <textarea id="reminderMessage" rows="8"></textarea>
-        </label>
-        <div class="reminder-actions">
-          <button id="sendWhatsappBtn" class="btn-whatsapp">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px; vertical-align:-3px;">
-              <path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6.1-.1.3-.4.5-.6.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 .9-1 2.3 0 1.3.9 2.6 1 2.8.1.2 1.8 2.8 4.4 3.9.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3z"/>
-            </svg>
-            Send on WhatsApp
-          </button>
-          <button id="sendEmailBtn" class="btn-primary">Send via Email</button>
-          <button id="copyMessageBtn" class="btn-ghost">Copy Message</button>
+ <!-- ================= REMINDER MODAL ================= -->
+<div id="reminderModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="reminderTitle">Send Reminder</h3>
+      <button id="closeReminderModal" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Template Selector -->
+      <div class="template-selector">
+        <div class="template-selector-label">Choose a template:</div>
+        <div class="template-pills" id="templatePills">
+          <button class="template-pill active" data-template="gentle">Gentle</button>
+          <button class="template-pill" data-template="firm">Firm</button>
+          <button class="template-pill" data-template="final">Final</button>
+          <button class="template-pill" data-template="short">Short</button>
         </div>
+      </div>
+
+      <!-- AI Generate Button -->
+      <div class="ai-generate-section">
+        <button id="generateWithAIButton" class="btn-ai" onclick="generateWithAI()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2L15 8L22 9L17 14L18 21L12 18L6 21L7 14L2 9L9 8L12 2Z"/>
+          </svg>
+          <span id="aiButtonText">Generate with AI</span>
+          <span class="ai-credit-badge" id="aiCreditBadge">1 credit</span>
+        </button>
+        <p class="ai-generate-note" id="aiGenerateNote">Personalize the message using AI</p>
+      </div>
+
+      <!-- Message Preview -->
+      <label>
+        <span>Message preview (editable)</span>
+        <textarea id="reminderMessage" rows="10"></textarea>
+      </label>
+
+      <!-- Send Actions -->
+      <div class="reminder-actions">
+        <button id="sendWhatsappBtn" class="btn-whatsapp">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="margin-right:6px; vertical-align:-3px;">
+            <path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.5-.1-.7.1-.2.3-.8.9-.9 1.1-.2.2-.3.2-.6.1-.3-.1-1.2-.4-2.3-1.4-.8-.8-1.4-1.7-1.6-2-.2-.3 0-.4.1-.6.1-.1.3-.4.5-.6.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 .9-1 2.3 0 1.3.9 2.6 1 2.8.1.2 1.8 2.8 4.4 3.9.6.3 1.1.4 1.5.5.6.2 1.2.2 1.6.1.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3z"/>
+          </svg>
+          Send on WhatsApp
+        </button>
+        <button id="sendEmailBtn" class="btn-primary">Send via Email</button>
+        <button id="copyMessageBtn" class="btn-ghost">Copy Message</button>
       </div>
     </div>
   </div>
+</div>
 
   <!-- ================= CSV IMPORT MODAL ================= -->
   <div id="importModal" class="modal-overlay hidden">
@@ -617,6 +645,49 @@
       </div>
     </div>
   </div>
+
+  <!-- ================= BUY CREDITS MODAL ================= -->
+<div id="buyCreditsModal" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>You're out of AI credits</h3>
+      <button id="closeBuyCreditsModal" class="modal-close">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="import-hint">
+        Continue with <strong>template-based reminders (always free)</strong>, or choose one:
+      </p>
+
+      <!-- Option 1: Buy Credits -->
+      <div class="credit-option">
+        <div class="credit-option-header">
+          <strong>💳 Buy Credits</strong>
+          <span class="credit-option-badge">Coming soon</span>
+        </div>
+        <p class="credit-option-desc">₹50 → 50 credits · ₹200 → 250 credits · ₹500 → 700 credits</p>
+        <button class="btn-ghost btn-block" disabled>Buy now (Razorpay integration coming)</button>
+      </div>
+
+      <!-- Option 2: BYOK -->
+      <div class="credit-option">
+        <div class="credit-option-header">
+          <strong>🔑 Bring Your Own Key</strong>
+          <span class="credit-option-badge credit-option-free">Free forever</span>
+        </div>
+        <p class="credit-option-desc">Use your own Groq, Gemini, or OpenAI key for unlimited AI generations.</p>
+        <button id="openApiKeyFromBuyModal" class="btn-primary btn-block">Add API Key</button>
+      </div>
+
+      <!-- Option 3: Continue with templates -->
+      <div class="credit-option credit-option-plain">
+        <p class="credit-option-desc">
+          Or keep using <strong>template-based reminders</strong> — unlimited and free forever.
+        </p>
+        <button id="continueWithTemplates" class="btn-ghost btn-block">Continue with templates</button>
+      </div>
+    </div>
+  </div>
+</div>
 
   <!-- PapaParse — CSV parsing -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
