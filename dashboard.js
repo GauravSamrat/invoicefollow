@@ -3014,14 +3014,9 @@ async function fetchGoogleSheet() {
 
         closeSheetModal();
 
-        document.getElementById("importStep1").classList.add("hidden");
-        document.getElementById("importStep2").classList.remove("hidden");
-        document.getElementById("importStep3").classList.add("hidden");
-        document.getElementById("importNextBtn").classList.remove("hidden");
-        document.getElementById("importConfirmBtn").classList.add("hidden");
-        document.getElementById("importBackBtn").classList.add("hidden");
+        // ✅ FIX: goToStep() use karo — importStep automatically set hoga
+        goToStep(2);
 
-        renderMappingUI();
         document.getElementById("importModal").classList.remove("hidden");
       },
     });
@@ -3030,7 +3025,6 @@ async function fetchGoogleSheet() {
     showToast("Error: " + err.message, "error");
   }
 }
-
 // ============================================
 // PAGE LOAD — Init
 // ============================================
