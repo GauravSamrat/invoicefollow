@@ -1121,7 +1121,9 @@ async function renderUserMenu() {
   const signUpBtn = document.getElementById("signUpBtn");
   const signOutBtn = document.getElementById("signOutBtn");
 
-  // Guest mode
+  // ============================================
+  // GUEST MODE
+  // ============================================
   if (isGuestMode) {
     avatarEl.textContent = "GU";
     nameEl.textContent = "Guest";
@@ -1136,22 +1138,28 @@ async function renderUserMenu() {
     return;
   }
 
-  // Logged-in user
-  const name = userProfile.full_name || "User";
+  // ============================================
+  // LOGGED-IN USER
+  // ============================================
   const email = userProfile.email || "—";
   const credits = userProfile.credits || 0;
   const subscription = userProfile.subscription || "free";
 
-  const initials = name
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
+  // Name decide karo — full_name → email prefix → "Account"
+  let displayName = userProfile.full_name?.trim();
+  if (!displayName) {
+    // Fallback: email ka prefix use karo
+    displayName = email.includes("@") ? email.split("@")[0] : "Account";
+    // Capitalize first letter
+    displayName = displayName.charAt(0).toUpperCase() + displayName.slice(1);
+  }
+
+  // Initials banao
+  const initials = getInitials(userProfile.full_name, email);
 
   avatarEl.textContent = initials;
-  nameEl.textContent = name.split(" ")[0] || "Account";
-  dropdownNameEl.textContent = name;
+  nameEl.textContent = displayName.split(" ")[0] || displayName;
+  dropdownNameEl.textContent = displayName;
   dropdownEmailEl.textContent = email;
   dropdownPlanEl.textContent = subscription === "pro" ? "Pro" : "Free";
 
@@ -1166,6 +1174,33 @@ async function renderUserMenu() {
 
   if (signUpBtn) signUpBtn.classList.add("hidden");
   if (signOutBtn) signOutBtn.classList.remove("hidden");
+}
+
+// Initials banao — full_name se ya email se
+function getInitials(fullName, email) {
+  // Pehle full_name try karo
+  if (fullName && fullName.trim()) {
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  // Fallback: email ka prefix
+  if (email && email.includes("@")) {
+    const prefix = email.split("@")[0];
+    // Remove numbers/special chars
+    const clean = prefix.replace(/[^a-zA-Z]/g, "");
+    if (clean.length >= 2) {
+      return (clean[0] + clean[1]).toUpperCase();
+    }
+    if (clean.length === 1) {
+      return (clean[0] + clean[0]).toUpperCase();
+    }
+  }
+
+  return "U"; // Ultimate fallback
 }
 
 // ============================================
@@ -2337,8 +2372,10 @@ function closeSettingsModal() {
   document.getElementById("settingsModal").classList.add("hidden");
 }
 
-function saveSettingsFromModal() {
-  settings.yourName = document.getElementById("sYourName").value.trim();
+async function saveSettingsFromModal() {
+  const newName = document.getElementById("sYourName").value.trim();
+
+  settings.yourName = newName;
   settings.yourEmail = document.getElementById("sYourEmail").value.trim();
   settings.yourPhone = document.getElementById("sYourPhone").value.trim();
   settings.currency = document.getElementById("sCurrency").value;
@@ -2350,66 +2387,36 @@ function saveSettingsFromModal() {
   if (autoRadio) settings.automation = autoRadio.value;
 
   saveSettings();
-  closeSettingsModal();
-  refreshAll();
-  showToast("Settings saved", "success");
-}
 
-function exportToCSV() {
-  if (invoices.length === 0) {
-    showToast("No invoices to export.", "warning");
-    return;
+  // ✅ Supabase mein bhi update karo (agar logged in hai)
+  if (!isGuestMode && currentUser) {
+    try {
+      // Update users table (full_name)
+      if (newName) {
+        await window.supabaseClient
+          .from("users")
+          .update({ full_name: newName })
+          .eq("id", currentUser.id);
+
+        // Local userProfile update karo
+        if (userProfile) userProfile.full_name = newName;
+      }
+
+      // Update settings table
+      await window.supabaseClient.from("settings").upsert({
+        user_id: currentUser.id,
+        default_currency: settings.currency,
+        reminder_days: [settings.days1, settings.days2, settings.days3],
+        automation_mode: settings.automation,
+      });
+    } catch (err) {
+      console.error("Supabase settings update error:", err);
+    }
   }
 
-  const headers = [
-    "Client",
-    "Phone",
-    "Email",
-    "Invoice#",
-    "Amount",
-    "Currency",
-    "Due Date",
-    "Promise Date",
-    "Status",
-    "Late Fee",
-    "Total Due",
-    "Reminders Sent",
-    "Created",
-    "Paid At",
-  ];
-  const rows = invoices.map((inv) => [
-    inv.clientName,
-    inv.clientPhone,
-    inv.clientEmail,
-    inv.invoiceNumber,
-    inv.amount,
-    inv.currency,
-    inv.dueDate,
-    inv.promiseDate,
-    computeStatus(inv),
-    calculateLateFee(inv),
-    getTotalWithLateFee(inv),
-    inv.remindersSent || 0,
-    inv.createdAt,
-    inv.paidAt || "",
-  ]);
-
-  const csv = [headers, ...rows]
-    .map((row) =>
-      row
-        .map((cell) => `"${String(cell || "").replace(/"/g, '""')}"`)
-        .join(","),
-    )
-    .join("\n");
-
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `invoicefollow-${todayISO()}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast("CSV exported", "success");
+  closeSettingsModal();
+  await refreshAll();
+  showToast("Settings saved", "success");
 }
 
 // ============================================
