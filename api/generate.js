@@ -1,11 +1,12 @@
 // ============================================
-// AI Email/Text Generation API — Multi-Provider
-// Supports: Groq, Gemini, OpenAI, Grok, Claude, OpenRouter
-// Priority: User's key first → Backend key
+// AI Generation API
+// Backend: Groq only (our key)
+// BYOK: Groq, Gemini, OpenAI, Grok, Anthropic, OpenRouter
+// Priority: User's key first → Backend Groq key
 // ============================================
 
 export default async function handler(req, res) {
-  // CORS headers — frontend se call allow karo
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -25,50 +26,56 @@ export default async function handler(req, res) {
   }
 
   // ============================================
-  // PROVIDER PRIORITY
+  // BUILD PROVIDER LIST — Priority Order
   // ============================================
   const providers = [];
 
-  // User's keys first (BYOK — priority order)
-  if (userApiKeys?.groq?.startsWith("gsk_")) {
+  // 1. User's Groq key (BYOK)
+  if (userApiKeys?.groq && userApiKeys.groq.startsWith("gsk_")) {
     providers.push({ name: "groq-user", key: userApiKeys.groq, type: "groq" });
   }
-  if (userApiKeys?.gemini?.startsWith("AIza")) {
+
+  // 2. User's Gemini key (BYOK)
+  if (userApiKeys?.gemini && userApiKeys.gemini.startsWith("AIza")) {
     providers.push({ name: "gemini-user", key: userApiKeys.gemini, type: "gemini" });
   }
-  if (userApiKeys?.openai?.startsWith("sk-") && !userApiKeys.openai.startsWith("sk-ant-")) {
+
+  // 3. User's OpenAI key (BYOK)
+  if (userApiKeys?.openai && userApiKeys.openai.startsWith("sk-") && !userApiKeys.openai.startsWith("sk-ant-")) {
     providers.push({ name: "openai-user", key: userApiKeys.openai, type: "openai" });
   }
-  if (userApiKeys?.grok?.startsWith("xai-")) {
+
+  // 4. User's Grok key (BYOK)
+  if (userApiKeys?.grok && userApiKeys.grok.startsWith("xai-")) {
     providers.push({ name: "grok-user", key: userApiKeys.grok, type: "grok" });
   }
-  if (userApiKeys?.anthropic?.startsWith("sk-ant-")) {
+
+  // 5. User's Anthropic key (BYOK)
+  if (userApiKeys?.anthropic && userApiKeys.anthropic.startsWith("sk-ant-")) {
     providers.push({ name: "anthropic-user", key: userApiKeys.anthropic, type: "anthropic" });
   }
-  if (userApiKeys?.openrouter?.startsWith("sk-or-")) {
+
+  // 6. User's OpenRouter key (BYOK)
+  if (userApiKeys?.openrouter && userApiKeys.openrouter.startsWith("sk-or-")) {
     providers.push({ name: "openrouter-user", key: userApiKeys.openrouter, type: "openrouter" });
   }
 
-  // Backend keys as fallback
+  // 7. Backend Groq key — FALLBACK (our key, for credits users)
   if (process.env.GROQ_API_KEY) {
     providers.push({ name: "groq-backend", key: process.env.GROQ_API_KEY, type: "groq" });
   }
-  if (process.env.GEMINI_API_KEY) {
-    providers.push({ name: "gemini-backend", key: process.env.GEMINI_API_KEY, type: "gemini" });
-  }
-  if (process.env.OPENAI_API_KEY) {
-    providers.push({ name: "openai-backend", key: process.env.OPENAI_API_KEY, type: "openai" });
-  }
 
+  // Agar koi provider nahi mila
   if (providers.length === 0) {
-    return res.status(400).json({
-      error: "no_ai_provider",
-      message: "No AI provider available. Please add your API key in settings.",
-      hint: "Get a free Groq key at https://console.groq.com/keys",
+    return res.status(503).json({
+      error: "no_provider",
+      message: "No AI provider available. Please add your API key in settings, or buy credits to use our Groq key.",
     });
   }
 
-  // Try each provider
+  // ============================================
+  // TRY EACH PROVIDER IN ORDER
+  // ============================================
   let lastError = null;
 
   for (const provider of providers) {
@@ -105,13 +112,14 @@ export default async function handler(req, res) {
     }
   }
 
+  // Sab fail ho gaye
   return res.status(500).json({
     error: lastError || "All AI providers failed",
   });
 }
 
 // ============================================
-// GROQ
+// GROQ — Backend + BYOK
 // ============================================
 async function callGroq(apiKey, prompt) {
   try {
@@ -131,7 +139,7 @@ async function callGroq(apiKey, prompt) {
 
     if (!response.ok) {
       const errText = await response.text();
-      return { success: false, error: `Groq error: ${response.status} — ${errText.slice(0, 100)}` };
+      return { success: false, error: `Groq ${response.status}: ${errText.slice(0, 100)}` };
     }
 
     const data = await response.json();
@@ -145,7 +153,7 @@ async function callGroq(apiKey, prompt) {
 }
 
 // ============================================
-// GEMINI
+// GEMINI — BYOK only
 // ============================================
 async function callGemini(apiKey, prompt) {
   try {
@@ -162,7 +170,7 @@ async function callGemini(apiKey, prompt) {
     );
 
     if (!response.ok) {
-      return { success: false, error: `Gemini error: ${response.status}` };
+      return { success: false, error: `Gemini ${response.status}` };
     }
 
     const data = await response.json();
@@ -176,7 +184,7 @@ async function callGemini(apiKey, prompt) {
 }
 
 // ============================================
-// OPENAI
+// OPENAI — BYOK only
 // ============================================
 async function callOpenAI(apiKey, prompt) {
   try {
@@ -195,7 +203,7 @@ async function callOpenAI(apiKey, prompt) {
     });
 
     if (!response.ok) {
-      return { success: false, error: `OpenAI error: ${response.status}` };
+      return { success: false, error: `OpenAI ${response.status}` };
     }
 
     const data = await response.json();
@@ -209,7 +217,7 @@ async function callOpenAI(apiKey, prompt) {
 }
 
 // ============================================
-// GROK (xAI)
+// GROK (xAI) — BYOK only
 // ============================================
 async function callGrok(apiKey, prompt) {
   try {
@@ -228,7 +236,7 @@ async function callGrok(apiKey, prompt) {
     });
 
     if (!response.ok) {
-      return { success: false, error: `Grok error: ${response.status}` };
+      return { success: false, error: `Grok ${response.status}` };
     }
 
     const data = await response.json();
@@ -242,7 +250,7 @@ async function callGrok(apiKey, prompt) {
 }
 
 // ============================================
-// ANTHROPIC (Claude)
+// ANTHROPIC (Claude) — BYOK only
 // ============================================
 async function callAnthropic(apiKey, prompt) {
   try {
@@ -261,7 +269,7 @@ async function callAnthropic(apiKey, prompt) {
     });
 
     if (!response.ok) {
-      return { success: false, error: `Claude error: ${response.status}` };
+      return { success: false, error: `Claude ${response.status}` };
     }
 
     const data = await response.json();
@@ -275,7 +283,7 @@ async function callAnthropic(apiKey, prompt) {
 }
 
 // ============================================
-// OPENROUTER (aggregator)
+// OPENROUTER — BYOK only
 // ============================================
 async function callOpenRouter(apiKey, prompt) {
   try {
@@ -294,7 +302,7 @@ async function callOpenRouter(apiKey, prompt) {
     });
 
     if (!response.ok) {
-      return { success: false, error: `OpenRouter error: ${response.status}` };
+      return { success: false, error: `OpenRouter ${response.status}` };
     }
 
     const data = await response.json();
