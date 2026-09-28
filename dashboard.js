@@ -21,6 +21,104 @@ let activeInvoiceId = null;
 let reminderMode = "whatsapp";
 let currentTemplate = "gentle";
 
+// ============================================
+// CURRENCY CONVERSION
+// ============================================
+let exchangeRates = null; // Cache: { INR: 1, USD: 83.2, GBP: 105.5, EUR: 90.1, ... }
+let ratesFetchedAt = null; // Timestamp
+let statsDisplayMode = "grouped"; // "grouped" ya "converted"
+
+const STORAGE_RATES = "invoicefollow_exchange_rates";
+const RATES_CACHE_HOURS = 24; // 24 ghante cache karo
+
+// Exchange rates fetch karo (exchangerate.host se — free, no API key)
+async function fetchExchangeRates() {
+  // Cache check karo
+  const cached = localStorage.getItem(STORAGE_RATES);
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      const hoursOld = (Date.now() - parsed.timestamp) / (1000 * 60 * 60);
+      if (hoursOld < RATES_CACHE_HOURS) {
+        exchangeRates = parsed.rates;
+        ratesFetchedAt = parsed.timestamp;
+        console.log("Using cached exchange rates", exchangeRates);
+        return;
+      }
+    } catch (e) {
+      console.warn("Cache parse error:", e);
+    }
+  }
+
+  // Fetch fresh rates
+  try {
+    // Base: INR (Indian Rupee) — kyunki user India-based hai
+    // Free API: exchangerate.host — no API key needed
+    const response = await fetch(
+      "https://api.exchangerate.host/latest?base=INR",
+    );
+
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+    const data = await response.json();
+
+    if (!data.success || !data.rates) {
+      throw new Error("Invalid API response");
+    }
+
+    // Cache karo
+    exchangeRates = data.rates;
+    ratesFetchedAt = Date.now();
+
+    localStorage.setItem(
+      STORAGE_RATES,
+      JSON.stringify({
+        rates: exchangeRates,
+        timestamp: ratesFetchedAt,
+        base: "INR",
+      }),
+    );
+
+    console.log("Fetched fresh rates:", exchangeRates);
+  } catch (err) {
+    console.error("Exchange rate fetch failed:", err);
+    // Fallback: approximate rates (agar API down hai)
+    exchangeRates = {
+      INR: 1,
+      USD: 0.012, // 1 INR = 0.012 USD (approx)
+      EUR: 0.011,
+      GBP: 0.0095,
+      AUD: 0.018,
+      CAD: 0.016,
+      AED: 0.044,
+      SGD: 0.016,
+    };
+    console.warn("Using fallback rates");
+  }
+}
+
+// Amount ko INR mein convert karo
+function convertToINR(amount, fromCurrency) {
+  if (!exchangeRates) {
+    // Rates load nahi hue — original return karo
+    return { amount, currency: fromCurrency, converted: false };
+  }
+
+  if (fromCurrency === "INR") {
+    return { amount, currency: "INR", converted: false };
+  }
+
+  // exchangeRates base INR hai — so rates[USD] = 1 INR mein kitne USD
+  // To convert USD → INR: amount / rates[USD]
+  const rate = exchangeRates[fromCurrency];
+  if (!rate) {
+    return { amount, currency: fromCurrency, converted: false };
+  }
+
+  const inrAmount = amount / rate;
+  return { amount: inrAmount, currency: "INR", converted: true };
+}
+
 // Advanced feature state
 let activeCallLogInvoiceId = null;
 let activeDemandLetterInvoiceId = null;
@@ -691,44 +789,152 @@ function updateGreeting() {
 // ============================================
 // STATS
 // ============================================
+// ============================================
+// STATS — Multi-currency support
+// ============================================
 function renderStats() {
-  const total = invoices
-    .filter((inv) => inv.status !== "paid")
-    .reduce((sum, inv) => sum + getTotalWithLateFee(inv), 0);
+  // ---------- Currency-wise grouping ----------
+  function groupByCurrency(invoiceList) {
+    const grouped = {};
+    invoiceList.forEach((inv) => {
+      const cur = inv.currency || "INR";
+      if (!grouped[cur]) grouped[cur] = 0;
+      grouped[cur] += Number(inv.amount || 0);
+    });
+    return grouped;
+  }
 
-  const overdue = invoices
-    .filter((inv) => computeStatus(inv) === "overdue")
-    .reduce((sum, inv) => sum + getTotalWithLateFee(inv), 0);
+  // ---------- Convert all to INR ----------
+  function convertAllToINR(grouped) {
+    let totalINR = 0;
+    let allConverted = true;
+    Object.keys(grouped).forEach((cur) => {
+      const result = convertToINR(grouped[cur], cur);
+      if (cur !== "INR" && !result.converted) allConverted = false;
+      totalINR += result.amount;
+    });
+    return { totalINR, allConverted };
+  }
 
+  // ---------- Total Outstanding ----------
+  const pendingInvoices = invoices.filter((inv) => inv.status !== "paid");
+  const totalGrouped = groupByCurrency(pendingInvoices);
+  const totalConverted = convertAllToINR(totalGrouped);
+
+  const totalEl = document.getElementById("statTotal");
+  const totalSubEl = document.getElementById("statTotalSub");
+
+  if (statsDisplayMode === "grouped") {
+    // Grouped view — currency-wise
+    const currencies = Object.keys(totalGrouped).sort();
+    if (currencies.length === 0) {
+      totalEl.innerHTML = `<span style="font-size:1.75rem;">₹0</span>`;
+    } else if (currencies.length === 1) {
+      totalEl.innerHTML = `<span style="font-size:1.75rem;">${formatAmount(totalGrouped[currencies[0]], currencies[0])}</span>`;
+    } else {
+      totalEl.innerHTML = currencies
+        .map(
+          (cur) =>
+            `<div class="currency-line">${formatAmount(totalGrouped[cur], cur)}</div>`,
+        )
+        .join("");
+    }
+  } else {
+    // Converted view — all in INR
+    totalEl.innerHTML = `<span style="font-size:1.75rem;">${formatAmount(totalConverted.totalINR, "INR")}</span>`;
+  }
+
+  totalSubEl.textContent = `${pendingInvoices.length} invoice${pendingInvoices.length !== 1 ? "s" : ""}`;
+
+  // ---------- Overdue ----------
+  const overdueInvoices = invoices.filter(
+    (inv) => computeStatus(inv) === "overdue",
+  );
+  const overdueGrouped = groupByCurrency(overdueInvoices);
+  const overdueConverted = convertAllToINR(overdueGrouped);
+
+  const overdueEl = document.getElementById("statOverdue");
+  const overdueSubEl = document.getElementById("statOverdueSub");
+
+  if (statsDisplayMode === "grouped") {
+    const currencies = Object.keys(overdueGrouped).sort();
+    if (currencies.length === 0) {
+      overdueEl.innerHTML = `<span style="font-size:1.75rem;">₹0</span>`;
+    } else if (currencies.length === 1) {
+      overdueEl.innerHTML = `<span style="font-size:1.75rem;">${formatAmount(overdueGrouped[currencies[0]], currencies[0])}</span>`;
+    } else {
+      overdueEl.innerHTML = currencies
+        .map(
+          (cur) =>
+            `<div class="currency-line">${formatAmount(overdueGrouped[cur], cur)}</div>`,
+        )
+        .join("");
+    }
+  } else {
+    overdueEl.innerHTML = `<span style="font-size:1.75rem;">${formatAmount(overdueConverted.totalINR, "INR")}</span>`;
+  }
+
+  overdueSubEl.textContent = `${overdueInvoices.length} invoice${overdueInvoices.length !== 1 ? "s" : ""}`;
+
+  // ---------- Paid This Month ----------
   const now = new Date();
   const monthStart = new Date(
     now.getFullYear(),
     now.getMonth(),
     1,
   ).toISOString();
-  const paidThisMonth = invoices
-    .filter(
-      (inv) => inv.status === "paid" && inv.paidAt && inv.paidAt >= monthStart,
-    )
-    .reduce((sum, inv) => sum + Number(inv.amount || 0), 0);
-
-  const pendingCount = invoices.filter((inv) => inv.status !== "paid").length;
-  const overdueCount = invoices.filter(
-    (inv) => computeStatus(inv) === "overdue",
-  ).length;
-  const paidCount = invoices.filter(
+  const paidInvoices = invoices.filter(
     (inv) => inv.status === "paid" && inv.paidAt && inv.paidAt >= monthStart,
-  ).length;
+  );
+  const paidGrouped = groupByCurrency(paidInvoices);
+  const paidConverted = convertAllToINR(paidGrouped);
 
-  document.getElementById("statTotal").textContent = formatAmount(total);
-  document.getElementById("statTotalSub").textContent =
-    `${pendingCount} invoice${pendingCount !== 1 ? "s" : ""}`;
-  document.getElementById("statOverdue").textContent = formatAmount(overdue);
-  document.getElementById("statOverdueSub").textContent =
-    `${overdueCount} invoice${overdueCount !== 1 ? "s" : ""}`;
-  document.getElementById("statPaid").textContent = formatAmount(paidThisMonth);
-  document.getElementById("statPaidSub").textContent =
-    `${paidCount} invoice${paidCount !== 1 ? "s" : ""}`;
+  const paidEl = document.getElementById("statPaid");
+  const paidSubEl = document.getElementById("statPaidSub");
+
+  if (statsDisplayMode === "grouped") {
+    const currencies = Object.keys(paidGrouped).sort();
+    if (currencies.length === 0) {
+      paidEl.innerHTML = `<span style="font-size:1.75rem;">₹0</span>`;
+    } else if (currencies.length === 1) {
+      paidEl.innerHTML = `<span style="font-size:1.75rem;">${formatAmount(paidGrouped[currencies[0]], currencies[0])}</span>`;
+    } else {
+      paidEl.innerHTML = currencies
+        .map(
+          (cur) =>
+            `<div class="currency-line">${formatAmount(paidGrouped[cur], cur)}</div>`,
+        )
+        .join("");
+    }
+  } else {
+    paidEl.innerHTML = `<span style="font-size:1.75rem;">${formatAmount(paidConverted.totalINR, "INR")}</span>`;
+  }
+
+  paidSubEl.textContent = `${paidInvoices.length} invoice${paidInvoices.length !== 1 ? "s" : ""}`;
+
+  // Update toggle button state
+  updateStatsToggleButton();
+}
+
+// Stats toggle button update karo
+function updateStatsToggleButton() {
+  const btn = document.getElementById("statsToggleBtn");
+  if (!btn) return;
+
+  if (statsDisplayMode === "grouped") {
+    btn.textContent = "Show in INR";
+    btn.title = "Convert all currencies to INR";
+  } else {
+    btn.textContent = "Show original";
+    btn.title = "Show amounts in original currencies";
+  }
+}
+
+// Toggle handler
+function toggleStatsDisplay() {
+  statsDisplayMode = statsDisplayMode === "grouped" ? "converted" : "grouped";
+  localStorage.setItem("invoicefollow_stats_display", statsDisplayMode);
+  renderStats();
 }
 
 // ============================================
@@ -3032,18 +3238,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   const authenticated = await checkAuthAndLoad();
   if (!authenticated) return;
 
+  // ✅ Fetch exchange rates in parallel with other init
+  fetchExchangeRates().catch((err) => console.warn("Rates fetch failed:", err));
+
+  // Restore stats display preference
+  const savedMode = localStorage.getItem("invoicefollow_stats_display");
+  if (savedMode === "converted" || savedMode === "grouped") {
+    statsDisplayMode = savedMode;
+  }
+
   await migrateLocalDataToSupabase();
   await grantSignupBonusIfNeeded();
 
   loadData();
   updateGreeting();
-  renderStats();
+  renderStats(); // ← Yeh ab multi-currency handle karega
   renderTodayActions();
   renderInvoices();
   await renderUserMenu();
   attachEventListeners();
 
-  // URL parameter check — buy credits flow
+  // URL parameter check (buy credits)
   const urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get("buy") === "credits") {
     setTimeout(() => {

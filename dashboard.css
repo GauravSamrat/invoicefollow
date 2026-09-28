@@ -217,6 +217,95 @@
   padding: 2rem 1.5rem 4rem;
 }
 
+
+
+
+/* ============ STATS HEADER + TOGGLE ============ */
+.stats-wrapper {
+  margin-bottom: 2rem;
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.stats-heading {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stats-toggle-btn {
+  padding: 0.4rem 0.9rem;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.stats-toggle-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* Multi-currency lines inside stat value */
+.currency-line {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+.stat-overdue .currency-line {
+  color: var(--danger);
+}
+
+.stat-paid .currency-line {
+  color: var(--success);
+}
+
+/* Adjust stat-value when multi-currency */
+.stat-value .currency-line:first-child {
+  margin-top: 0.15rem;
+}
+
+.stat-value .currency-line:last-child {
+  margin-bottom: 0.15rem;
+}
+
+/* Mobile adjustments */
+@media (max-width: 900px) {
+  .currency-line {
+    font-size: 1.1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .currency-line {
+    font-size: 1rem;
+  }
+  .stats-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+  .stats-toggle-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
 /* ============ STATS ============ */
 .stats-grid {
   display: grid;

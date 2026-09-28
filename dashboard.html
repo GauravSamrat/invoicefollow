@@ -73,23 +73,33 @@
   <main class="dash-main">
 
     <!-- Stats Cards -->
-    <section class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">Total Outstanding</div>
-        <div class="stat-value" id="statTotal">₹0</div>
-        <div class="stat-sub" id="statTotalSub">0 invoices</div>
-      </div>
-      <div class="stat-card stat-overdue">
-        <div class="stat-label">Overdue</div>
-        <div class="stat-value" id="statOverdue">₹0</div>
-        <div class="stat-sub" id="statOverdueSub">0 invoices</div>
-      </div>
-      <div class="stat-card stat-paid">
-        <div class="stat-label">Paid (This Month)</div>
-        <div class="stat-value" id="statPaid">₹0</div>
-        <div class="stat-sub" id="statPaidSub">0 invoices</div>
-      </div>
-    </section>
+    <section class="stats-wrapper">
+  <!-- Toggle Button -->
+  <div class="stats-header">
+    <h3 class="stats-heading">Overview</h3>
+    <button id="statsToggleBtn" class="stats-toggle-btn" onclick="toggleStatsDisplay()">
+      Show in INR
+    </button>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-label">Total Outstanding</div>
+      <div class="stat-value" id="statTotal">₹0</div>
+      <div class="stat-sub" id="statTotalSub">0 invoices</div>
+    </div>
+    <div class="stat-card stat-overdue">
+      <div class="stat-label">Overdue</div>
+      <div class="stat-value" id="statOverdue">₹0</div>
+      <div class="stat-sub" id="statOverdueSub">0 invoices</div>
+    </div>
+    <div class="stat-card stat-paid">
+      <div class="stat-label">Paid (This Month)</div>
+      <div class="stat-value" id="statPaid">₹0</div>
+      <div class="stat-sub" id="statPaidSub">0 invoices</div>
+    </div>
+  </div>
+</section>
 
     <!-- Today's Action Section -->
     <section class="today-section">
