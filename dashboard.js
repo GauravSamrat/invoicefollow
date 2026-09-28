@@ -2511,6 +2511,7 @@ function autoMapColumns() {
   const fieldPatterns = {
     clientName: [
       "client name",
+      "clientname",
       "client",
       "name",
       "customer",
@@ -2519,6 +2520,8 @@ function autoMapColumns() {
       "party name",
     ],
     clientPhone: [
+      "client phone",
+      "clientphone",
       "phone",
       "mobile",
       "whatsapp",
@@ -2526,26 +2529,44 @@ function autoMapColumns() {
       "phone number",
       "mobile number",
     ],
-    clientEmail: ["email", "e-mail", "mail", "email id", "email address"],
+    clientEmail: [
+      "client email",
+      "clientemail",
+      "email",
+      "e-mail",
+      "mail",
+      "email id",
+      "email address",
+    ],
     invoiceNumber: [
-      "invoice",
+      "invoice number",
+      "invoicenumber",
       "invoice #",
       "invoice no",
-      "invoice number",
+      "invoice",
       "inv",
       "inv no",
       "bill no",
     ],
     amount: ["amount", "total", "value", "invoice amount", "amt", "price"],
     currency: ["currency", "curr"],
-    dueDate: ["due date", "due", "due on", "payment due", "duedate"],
+    dueDate: ["due date", "duedate", "due", "due on", "payment due"],
     promiseDate: [
       "promise date",
+      "promisedate",
       "promise",
       "promised date",
       "commitment date",
     ],
-    work: ["work", "description", "service", "project", "notes", "details"],
+    work: [
+      "work",
+      "what was the work?",
+      "what was the work",
+      "description",
+      "service",
+      "project",
+      "details",
+    ],
     notes: ["notes", "remarks", "comment", "comments"],
   };
 
@@ -2558,6 +2579,8 @@ function autoMapColumns() {
       }
     }
   });
+
+  console.log("Auto-mapped columns:", columnMapping);
 }
 
 function renderMappingUI() {
