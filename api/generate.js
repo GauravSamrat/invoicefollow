@@ -37,12 +37,24 @@ export default async function handler(req, res) {
 
   // 2. User's Gemini key (BYOK)
   if (userApiKeys?.gemini && userApiKeys.gemini.startsWith("AIza")) {
-    providers.push({ name: "gemini-user", key: userApiKeys.gemini, type: "gemini" });
+    providers.push({
+      name: "gemini-user",
+      key: userApiKeys.gemini,
+      type: "gemini",
+    });
   }
 
   // 3. User's OpenAI key (BYOK)
-  if (userApiKeys?.openai && userApiKeys.openai.startsWith("sk-") && !userApiKeys.openai.startsWith("sk-ant-")) {
-    providers.push({ name: "openai-user", key: userApiKeys.openai, type: "openai" });
+  if (
+    userApiKeys?.openai &&
+    userApiKeys.openai.startsWith("sk-") &&
+    !userApiKeys.openai.startsWith("sk-ant-")
+  ) {
+    providers.push({
+      name: "openai-user",
+      key: userApiKeys.openai,
+      type: "openai",
+    });
   }
 
   // 4. User's Grok key (BYOK)
@@ -52,24 +64,37 @@ export default async function handler(req, res) {
 
   // 5. User's Anthropic key (BYOK)
   if (userApiKeys?.anthropic && userApiKeys.anthropic.startsWith("sk-ant-")) {
-    providers.push({ name: "anthropic-user", key: userApiKeys.anthropic, type: "anthropic" });
+    providers.push({
+      name: "anthropic-user",
+      key: userApiKeys.anthropic,
+      type: "anthropic",
+    });
   }
 
   // 6. User's OpenRouter key (BYOK)
   if (userApiKeys?.openrouter && userApiKeys.openrouter.startsWith("sk-or-")) {
-    providers.push({ name: "openrouter-user", key: userApiKeys.openrouter, type: "openrouter" });
+    providers.push({
+      name: "openrouter-user",
+      key: userApiKeys.openrouter,
+      type: "openrouter",
+    });
   }
 
   // 7. Backend Groq key — FALLBACK (our key, for credits users)
   if (process.env.GROQ_API_KEY) {
-    providers.push({ name: "groq-backend", key: process.env.GROQ_API_KEY, type: "groq" });
+    providers.push({
+      name: "groq-backend",
+      key: process.env.GROQ_API_KEY,
+      type: "groq",
+    });
   }
 
   // Agar koi provider nahi mila
   if (providers.length === 0) {
     return res.status(503).json({
       error: "no_provider",
-      message: "No AI provider available. Please add your API key in settings, or buy credits to use our Groq key.",
+      message:
+        "No AI provider available. Please add your API key in settings, or buy credits to use our Groq key.",
     });
   }
 
@@ -123,23 +148,29 @@ export default async function handler(req, res) {
 // ============================================
 async function callGroq(apiKey, prompt) {
   try {
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const response = await fetch(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 1024,
+        }),
       },
-      body: JSON.stringify({
-        model: "llama-3.1-8b-instant",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
+    );
 
     if (!response.ok) {
       const errText = await response.text();
-      return { success: false, error: `Groq ${response.status}: ${errText.slice(0, 100)}` };
+      return {
+        success: false,
+        error: `Groq ${response.status}: ${errText.slice(0, 100)}`,
+      };
     }
 
     const data = await response.json();
@@ -166,7 +197,7 @@ async function callGemini(apiKey, prompt) {
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: { temperature: 0.7, maxOutputTokens: 1024 },
         }),
-      }
+      },
     );
 
     if (!response.ok) {
@@ -287,19 +318,22 @@ async function callAnthropic(apiKey, prompt) {
 // ============================================
 async function callOpenRouter(apiKey, prompt) {
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.3-70b-instruct",
+          messages: [{ role: "user", content: prompt }],
+          temperature: 0.7,
+          max_tokens: 1024,
+        }),
       },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.3-70b-instruct",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7,
-        max_tokens: 1024,
-      }),
-    });
+    );
 
     if (!response.ok) {
       return { success: false, error: `OpenRouter ${response.status}` };
