@@ -1496,9 +1496,14 @@ function attachEventListeners() {
     .addEventListener("click", fetchGoogleSheet);
 
   // ---------- Delegated events (invoice actions) ----------
+  // ---------- Delegated events (invoice actions) ----------
   document.addEventListener("click", (e) => {
-    const action = e.target.dataset.action;
-    const id = e.target.dataset.id;
+    // ✅ Closest [data-action] dhundho — child elements bhi handle honge
+    const target = e.target.closest("[data-action]");
+    if (!target) return;
+
+    const action = target.dataset.action;
+    const id = target.dataset.id;
     if (!action || !id) return;
 
     const inv = invoices.find((i) => i.id === id);
@@ -1513,196 +1518,205 @@ function attachEventListeners() {
     if (action === "demand-letter") openDemandLetterModal(inv);
     if (action === "confirm-payment") openPaymentConfirmModal(inv);
   });
-}
 
-// ============================================
-// END OF PART 2
-// Part 3 continues with: modals (add, detail,
-// reminder, call log, demand letter, settings),
-// API key modal, AI calls, Razorpay, CSV, sheets,
-// init
-// ============================================
-// ============================================
-// InvoiceFollow Dashboard — Part 3 of 3
-// Modals, AI calls, Razorpay, CSV, sheets, init
-// ============================================
+  // ============================================
+  // END OF PART 2
+  // Part 3 continues with: modals (add, detail,
+  // reminder, call log, demand letter, settings),
+  // API key modal, AI calls, Razorpay, CSV, sheets,
+  // init
+  // ============================================
+  // ============================================
+  // InvoiceFollow Dashboard — Part 3 of 3
+  // Modals, AI calls, Razorpay, CSV, sheets, init
+  // ============================================
 
-// ============================================
-// ADD INVOICE MODAL
-// ============================================
-function openAddModal() {
-  [
-    "fClientName",
-    "fClientPhone",
-    "fClientEmail",
-    "fInvoiceNumber",
-    "fAmount",
-    "fDueDate",
-    "fPromiseDate",
-    "fWork",
-    "fNotes",
-    "fLateFeeValue",
-    "fDepositAmount",
-  ].forEach((id) => {
-    const el = document.getElementById(id);
-    if (el) el.value = "";
-  });
-  document.getElementById("fCurrency").value = settings.currency || "INR";
-  document.getElementById("fLateFeeType").value = "";
-  document.getElementById("fPaymentStructure").value = "full";
-  document.getElementById("fDepositReceived").value = "no";
-  document.getElementById("depositFields").classList.add("hidden");
-
-  document.getElementById("addModal").classList.remove("hidden");
-}
-
-function closeAddModal() {
-  document.getElementById("addModal").classList.add("hidden");
-}
-
-function saveNewInvoice() {
-  const clientName = document.getElementById("fClientName").value.trim();
-  const clientPhone = document.getElementById("fClientPhone").value.trim();
-  const clientEmail = document.getElementById("fClientEmail").value.trim();
-  const invoiceNumber = document.getElementById("fInvoiceNumber").value.trim();
-  const amount = document.getElementById("fAmount").value;
-  const currency = document.getElementById("fCurrency").value;
-  const dueDate = document.getElementById("fDueDate").value;
-  const promiseDate = document.getElementById("fPromiseDate").value;
-  const work = document.getElementById("fWork").value.trim();
-  const notes = document.getElementById("fNotes").value.trim();
-
-  const lateFeeType = document.getElementById("fLateFeeType").value;
-  const lateFeeValue =
-    parseFloat(document.getElementById("fLateFeeValue").value) || 0;
-  const paymentStructure = document.getElementById("fPaymentStructure").value;
-  const depositAmount =
-    parseFloat(document.getElementById("fDepositAmount").value) || 0;
-  const depositReceived =
-    document.getElementById("fDepositReceived").value === "yes";
-
-  if (!clientName || !clientPhone || !amount || !dueDate) {
-    showToast(
-      "Client name, phone, amount, and due date are required.",
-      "warning",
-    );
-    return;
-  }
-
-  const newInvoice = {
-    id: "inv_" + Date.now(),
-    clientName,
-    clientPhone,
-    clientEmail,
-    invoiceNumber,
-    amount: Number(amount),
-    currency,
-    dueDate,
-    promiseDate: promiseDate || null,
-    work,
-    notes,
-    status: "pending",
-    remindersSent: 0,
-    lastTouchpoint: null,
-    createdAt: todayISO(),
-    paidAt: null,
-    lateFeeType: lateFeeType || null,
-    lateFeeValue: lateFeeValue || 0,
-    paymentStructure: paymentStructure || "full",
-    depositAmount: depositAmount || 0,
-    depositReceived: depositReceived || false,
-    callLogs: [],
-    clientSaysPaidAt: null,
-    demandLetterSentAt: null,
-  };
-
-  invoices.push(newInvoice);
-  saveInvoices();
-  closeAddModal();
-  refreshAll();
-  showToast(`${clientName} added to your invoices`, "success");
-}
-
-// ============================================
-// DETAIL MODAL
-// ============================================
-function openDetailModal(inv) {
-  activeInvoiceId = inv.id;
-  const modal = document.getElementById("detailModal");
-  const body = document.getElementById("detailBody");
-  const status = computeStatus(inv);
-
-  document.getElementById("detailTitle").textContent =
-    `${inv.clientName} — ${formatAmount(inv.amount, inv.currency)}`;
-
-  const timeline = [];
-  timeline.push({ date: inv.createdAt, text: "Invoice created", type: "done" });
-
-  if (inv.dueDate) {
-    const isPast = inv.dueDate < todayISO();
-    timeline.push({
-      date: inv.dueDate,
-      text: "Due date",
-      type: isPast ? "done" : "",
+  // ============================================
+  // ADD INVOICE MODAL
+  // ============================================
+  function openAddModal() {
+    [
+      "fClientName",
+      "fClientPhone",
+      "fClientEmail",
+      "fInvoiceNumber",
+      "fAmount",
+      "fDueDate",
+      "fPromiseDate",
+      "fWork",
+      "fNotes",
+      "fLateFeeValue",
+      "fDepositAmount",
+    ].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.value = "";
     });
+    document.getElementById("fCurrency").value = settings.currency || "INR";
+    document.getElementById("fLateFeeType").value = "";
+    document.getElementById("fPaymentStructure").value = "full";
+    document.getElementById("fDepositReceived").value = "no";
+    document.getElementById("depositFields").classList.add("hidden");
+
+    document.getElementById("addModal").classList.remove("hidden");
   }
 
-  if (inv.promiseDate) {
-    const isToday = inv.promiseDate === todayISO();
-    timeline.push({
-      date: inv.promiseDate,
-      text: "Client promise date",
-      type: isToday ? "today" : inv.promiseDate < todayISO() ? "done" : "",
-    });
+  function closeAddModal() {
+    document.getElementById("addModal").classList.add("hidden");
   }
 
-  if (inv.lastTouchpoint) {
+  function saveNewInvoice() {
+    const clientName = document.getElementById("fClientName").value.trim();
+    const clientPhone = document.getElementById("fClientPhone").value.trim();
+    const clientEmail = document.getElementById("fClientEmail").value.trim();
+    const invoiceNumber = document
+      .getElementById("fInvoiceNumber")
+      .value.trim();
+    const amount = document.getElementById("fAmount").value;
+    const currency = document.getElementById("fCurrency").value;
+    const dueDate = document.getElementById("fDueDate").value;
+    const promiseDate = document.getElementById("fPromiseDate").value;
+    const work = document.getElementById("fWork").value.trim();
+    const notes = document.getElementById("fNotes").value.trim();
+
+    const lateFeeType = document.getElementById("fLateFeeType").value;
+    const lateFeeValue =
+      parseFloat(document.getElementById("fLateFeeValue").value) || 0;
+    const paymentStructure = document.getElementById("fPaymentStructure").value;
+    const depositAmount =
+      parseFloat(document.getElementById("fDepositAmount").value) || 0;
+    const depositReceived =
+      document.getElementById("fDepositReceived").value === "yes";
+
+    if (!clientName || !clientPhone || !amount || !dueDate) {
+      showToast(
+        "Client name, phone, amount, and due date are required.",
+        "warning",
+      );
+      return;
+    }
+
+    const newInvoice = {
+      id: "inv_" + Date.now(),
+      clientName,
+      clientPhone,
+      clientEmail,
+      invoiceNumber,
+      amount: Number(amount),
+      currency,
+      dueDate,
+      promiseDate: promiseDate || null,
+      work,
+      notes,
+      status: "pending",
+      remindersSent: 0,
+      lastTouchpoint: null,
+      createdAt: todayISO(),
+      paidAt: null,
+      lateFeeType: lateFeeType || null,
+      lateFeeValue: lateFeeValue || 0,
+      paymentStructure: paymentStructure || "full",
+      depositAmount: depositAmount || 0,
+      depositReceived: depositReceived || false,
+      callLogs: [],
+      clientSaysPaidAt: null,
+      demandLetterSentAt: null,
+    };
+
+    invoices.push(newInvoice);
+    saveInvoices();
+    closeAddModal();
+    refreshAll();
+    showToast(`${clientName} added to your invoices`, "success");
+  }
+
+  // ============================================
+  // DETAIL MODAL
+  // ============================================
+  function openDetailModal(inv) {
+    activeInvoiceId = inv.id;
+    const modal = document.getElementById("detailModal");
+    const body = document.getElementById("detailBody");
+    const status = computeStatus(inv);
+
+    document.getElementById("detailTitle").textContent =
+      `${inv.clientName} — ${formatAmount(inv.amount, inv.currency)}`;
+
+    const timeline = [];
     timeline.push({
-      date: inv.lastTouchpoint,
-      text: "Last contact",
+      date: inv.createdAt,
+      text: "Invoice created",
       type: "done",
     });
-  }
 
-  if (inv.callLogs && inv.callLogs.length > 0) {
-    inv.callLogs.forEach((log) => {
+    if (inv.dueDate) {
+      const isPast = inv.dueDate < todayISO();
       timeline.push({
-        date: log.date,
-        text: `Call — ${log.outcome.replace(/_/g, " ")}${log.duration ? ` (${log.duration} min)` : ""}`,
+        date: inv.dueDate,
+        text: "Due date",
+        type: isPast ? "done" : "",
+      });
+    }
+
+    if (inv.promiseDate) {
+      const isToday = inv.promiseDate === todayISO();
+      timeline.push({
+        date: inv.promiseDate,
+        text: "Client promise date",
+        type: isToday ? "today" : inv.promiseDate < todayISO() ? "done" : "",
+      });
+    }
+
+    if (inv.lastTouchpoint) {
+      timeline.push({
+        date: inv.lastTouchpoint,
+        text: "Last contact",
         type: "done",
       });
-    });
-  }
+    }
 
-  if (inv.clientSaysPaidAt) {
-    timeline.push({
-      date: inv.clientSaysPaidAt,
-      text: "Client says paid",
-      type: "done",
-    });
-  }
+    if (inv.callLogs && inv.callLogs.length > 0) {
+      inv.callLogs.forEach((log) => {
+        timeline.push({
+          date: log.date,
+          text: `Call — ${log.outcome.replace(/_/g, " ")}${log.duration ? ` (${log.duration} min)` : ""}`,
+          type: "done",
+        });
+      });
+    }
 
-  if (inv.demandLetterSentAt) {
-    timeline.push({
-      date: inv.demandLetterSentAt,
-      text: "Demand letter sent",
-      type: "done",
-    });
-  }
+    if (inv.clientSaysPaidAt) {
+      timeline.push({
+        date: inv.clientSaysPaidAt,
+        text: "Client says paid",
+        type: "done",
+      });
+    }
 
-  if (inv.status === "paid" && inv.paidAt) {
-    timeline.push({ date: inv.paidAt, text: "Payment received", type: "done" });
-  } else {
-    const nextFU = computeNextFollowUp(inv);
-    if (nextFU)
-      timeline.push({ date: nextFU, text: "Next follow-up", type: "" });
-  }
+    if (inv.demandLetterSentAt) {
+      timeline.push({
+        date: inv.demandLetterSentAt,
+        text: "Demand letter sent",
+        type: "done",
+      });
+    }
 
-  timeline.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+    if (inv.status === "paid" && inv.paidAt) {
+      timeline.push({
+        date: inv.paidAt,
+        text: "Payment received",
+        type: "done",
+      });
+    } else {
+      const nextFU = computeNextFollowUp(inv);
+      if (nextFU)
+        timeline.push({ date: nextFU, text: "Next follow-up", type: "" });
+    }
 
-  const lateFee = calculateLateFee(inv);
+    timeline.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 
-  body.innerHTML = `
+    const lateFee = calculateLateFee(inv);
+
+    body.innerHTML = `
     <div class="detail-section">
       <h4>Details</h4>
       <div class="detail-row"><span class="detail-label">Status</span><span class="detail-value"><span class="inv-status status-${status}">${status.replace(/_/g, " ")}</span></span></div>
@@ -1760,127 +1774,127 @@ function openDetailModal(inv) {
     </div>
   `;
 
-  document
-    .getElementById("deleteInvoiceBtn")
-    .addEventListener("click", async () => {
-      const ok = await showConfirm(
-        "Delete this invoice? This cannot be undone.",
-        {
-          title: "Delete invoice",
-          type: "error",
-          okText: "Delete",
-          cancelText: "Cancel",
-        },
-      );
-      if (!ok) return;
+    document
+      .getElementById("deleteInvoiceBtn")
+      .addEventListener("click", async () => {
+        const ok = await showConfirm(
+          "Delete this invoice? This cannot be undone.",
+          {
+            title: "Delete invoice",
+            type: "error",
+            okText: "Delete",
+            cancelText: "Cancel",
+          },
+        );
+        if (!ok) return;
 
-      invoices = invoices.filter((i) => i.id !== inv.id);
-      saveInvoices();
-      modal.classList.add("hidden");
-      refreshAll();
-      showToast("Invoice deleted", "success");
-    });
+        invoices = invoices.filter((i) => i.id !== inv.id);
+        saveInvoices();
+        modal.classList.add("hidden");
+        refreshAll();
+        showToast("Invoice deleted", "success");
+      });
 
-  modal.classList.remove("hidden");
-}
-
-// ============================================
-// REMINDER MODAL — Template default, AI optional
-// ============================================
-function openReminderModal(inv, mode) {
-  activeInvoiceId = inv.id;
-  reminderMode = mode;
-
-  document.getElementById("reminderTitle").textContent =
-    mode === "whatsapp"
-      ? `WhatsApp Reminder — ${inv.clientName}`
-      : `Email Reminder — ${inv.clientName}`;
-
-  // Auto-select template based on overdue days
-  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
-  if (overdueDays >= 14) currentTemplate = "final";
-  else if (overdueDays >= 7) currentTemplate = "firm";
-  else currentTemplate = "gentle";
-
-  updateTemplateUI();
-  updateAIText();
-  loadTemplateMessage(inv);
-
-  document.getElementById("reminderModal").classList.remove("hidden");
-}
-
-// AI button text update — credits/BYOK status
-function updateAIText() {
-  const aiTextEl = document.getElementById("aiButtonText");
-  const aiBadgeEl = document.getElementById("aiCreditBadge");
-  const aiNoteEl = document.getElementById("aiGenerateNote");
-
-  if (!aiTextEl) return;
-
-  if (hasAnyApiKey()) {
-    aiTextEl.textContent = "Generate with AI";
-    aiBadgeEl.textContent = "Unlimited";
-    aiBadgeEl.style.background = "rgba(16, 185, 129, 0.3)";
-    aiNoteEl.textContent =
-      "You're using your own API key — unlimited AI generations";
-    return;
+    modal.classList.remove("hidden");
   }
 
-  if (isPro()) {
-    aiTextEl.textContent = "Generate with AI";
-    aiBadgeEl.textContent = "Pro";
-    aiBadgeEl.style.background = "rgba(16, 185, 129, 0.3)";
-    aiNoteEl.textContent = "Pro plan — unlimited AI generations";
-    return;
+  // ============================================
+  // REMINDER MODAL — Template default, AI optional
+  // ============================================
+  function openReminderModal(inv, mode) {
+    activeInvoiceId = inv.id;
+    reminderMode = mode;
+
+    document.getElementById("reminderTitle").textContent =
+      mode === "whatsapp"
+        ? `WhatsApp Reminder — ${inv.clientName}`
+        : `Email Reminder — ${inv.clientName}`;
+
+    // Auto-select template based on overdue days
+    const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
+    if (overdueDays >= 14) currentTemplate = "final";
+    else if (overdueDays >= 7) currentTemplate = "firm";
+    else currentTemplate = "gentle";
+
+    updateTemplateUI();
+    updateAIText();
+    loadTemplateMessage(inv);
+
+    document.getElementById("reminderModal").classList.remove("hidden");
   }
 
-  const credits = getCurrentCredits();
-  aiBadgeEl.style.background = "rgba(255, 255, 255, 0.2)";
-  aiBadgeEl.textContent = "1 credit";
+  // AI button text update — credits/BYOK status
+  function updateAIText() {
+    const aiTextEl = document.getElementById("aiButtonText");
+    const aiBadgeEl = document.getElementById("aiCreditBadge");
+    const aiNoteEl = document.getElementById("aiGenerateNote");
 
-  if (credits < 1) {
-    aiTextEl.textContent = "AI (Out of credits)";
-    aiNoteEl.textContent = `You have 0 credits. Buy credits or add your own API key.`;
-  } else {
-    aiTextEl.textContent = "Generate with AI";
-    aiNoteEl.textContent = `You have ${credits} credit${credits !== 1 ? "s" : ""} · Each AI generation costs 1 credit`;
-  }
-}
+    if (!aiTextEl) return;
 
-// Template UI update
-function updateTemplateUI() {
-  document.querySelectorAll(".template-pill").forEach((pill) => {
-    if (pill.dataset.template === currentTemplate) {
-      pill.classList.add("active");
-    } else {
-      pill.classList.remove("active");
+    if (hasAnyApiKey()) {
+      aiTextEl.textContent = "Generate with AI";
+      aiBadgeEl.textContent = "Unlimited";
+      aiBadgeEl.style.background = "rgba(16, 185, 129, 0.3)";
+      aiNoteEl.textContent =
+        "You're using your own API key — unlimited AI generations";
+      return;
     }
-  });
-}
 
-// Load template message (instant)
-function loadTemplateMessage(inv) {
-  const message = buildTemplateMessage(inv, currentTemplate);
-  document.getElementById("reminderMessage").value = message;
-}
+    if (isPro()) {
+      aiTextEl.textContent = "Generate with AI";
+      aiBadgeEl.textContent = "Pro";
+      aiBadgeEl.style.background = "rgba(16, 185, 129, 0.3)";
+      aiNoteEl.textContent = "Pro plan — unlimited AI generations";
+      return;
+    }
 
-// Template messages — 4 variants
-function buildTemplateMessage(inv, templateType) {
-  const yourName = settings.yourName || "Your name";
-  const amount = formatAmount(inv.amount, inv.currency);
-  const invNum = inv.invoiceNumber ? ` #${inv.invoiceNumber}` : "";
-  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
-  const lateFee = calculateLateFee(inv);
-  const totalDue = getTotalWithLateFee(inv);
+    const credits = getCurrentCredits();
+    aiBadgeEl.style.background = "rgba(255, 255, 255, 0.2)";
+    aiBadgeEl.textContent = "1 credit";
 
-  const lateFeeLine =
-    lateFee > 0
-      ? `\n\nAs per our agreement, a late fee of ${formatAmount(lateFee, inv.currency)} has accrued. Total due: ${formatAmount(totalDue, inv.currency)}.`
-      : "";
+    if (credits < 1) {
+      aiTextEl.textContent = "AI (Out of credits)";
+      aiNoteEl.textContent = `You have 0 credits. Buy credits or add your own API key.`;
+    } else {
+      aiTextEl.textContent = "Generate with AI";
+      aiNoteEl.textContent = `You have ${credits} credit${credits !== 1 ? "s" : ""} · Each AI generation costs 1 credit`;
+    }
+  }
 
-  switch (templateType) {
-    case "gentle":
-      return `Hi ${inv.clientName},
+  // Template UI update
+  function updateTemplateUI() {
+    document.querySelectorAll(".template-pill").forEach((pill) => {
+      if (pill.dataset.template === currentTemplate) {
+        pill.classList.add("active");
+      } else {
+        pill.classList.remove("active");
+      }
+    });
+  }
+
+  // Load template message (instant)
+  function loadTemplateMessage(inv) {
+    const message = buildTemplateMessage(inv, currentTemplate);
+    document.getElementById("reminderMessage").value = message;
+  }
+
+  // Template messages — 4 variants
+  function buildTemplateMessage(inv, templateType) {
+    const yourName = settings.yourName || "Your name";
+    const amount = formatAmount(inv.amount, inv.currency);
+    const invNum = inv.invoiceNumber ? ` #${inv.invoiceNumber}` : "";
+    const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
+    const lateFee = calculateLateFee(inv);
+    const totalDue = getTotalWithLateFee(inv);
+
+    const lateFeeLine =
+      lateFee > 0
+        ? `\n\nAs per our agreement, a late fee of ${formatAmount(lateFee, inv.currency)} has accrued. Total due: ${formatAmount(totalDue, inv.currency)}.`
+        : "";
+
+    switch (templateType) {
+      case "gentle":
+        return `Hi ${inv.clientName},
 
 Just circling back on invoice${invNum} for ${amount} — it was due on ${formatDate(inv.dueDate)}.
 
@@ -1891,8 +1905,8 @@ Could you confirm a payment date? If there's an issue, let me know so we can sor
 Thanks,
 ${yourName}`;
 
-    case "firm":
-      return `Hi ${inv.clientName},
+      case "firm":
+        return `Hi ${inv.clientName},
 
 Following up again on invoice${invNum} for ${amount}, which was due on ${formatDate(inv.dueDate)}. It's now ${overdueDays} days past due.${lateFeeLine}
 
@@ -1901,8 +1915,8 @@ Could you confirm when payment will be processed? I'd appreciate a firm date.
 Thanks,
 ${yourName}`;
 
-    case "final":
-      return `Hi ${inv.clientName},
+      case "final":
+        return `Hi ${inv.clientName},
 
 Invoice${invNum} for ${amount} is now ${overdueDays} days overdue. I haven't heard back from my previous reminders.${lateFeeLine}
 
@@ -1911,8 +1925,8 @@ If I don't receive payment or a clear plan by this Friday, I'll need to pause fu
 Thanks,
 ${yourName}`;
 
-    case "short":
-      return `Hi ${inv.clientName},
+      case "short":
+        return `Hi ${inv.clientName},
 
 Quick reminder — invoice${invNum} for ${amount} is due.${lateFeeLine}
 
@@ -1921,59 +1935,59 @@ Could you process the payment this week?
 Thanks,
 ${yourName}`;
 
-    default:
-      return buildTemplateMessage(inv, "gentle");
-  }
-}
-
-// ============================================
-// AI GENERATION — Optional
-// ============================================
-async function generateWithAI() {
-  const inv = invoices.find((i) => i.id === activeInvoiceId);
-  if (!inv) return;
-
-  // Credits check
-  if (!hasAnyApiKey() && !isPro() && getCurrentCredits() < CREDITS_PER_TASK) {
-    showBuyCreditsModal();
-    return;
+      default:
+        return buildTemplateMessage(inv, "gentle");
+    }
   }
 
-  const messageEl = document.getElementById("reminderMessage");
-  const aiButton = document.getElementById("generateWithAIButton");
-  const aiTextEl = document.getElementById("aiButtonText");
+  // ============================================
+  // AI GENERATION — Optional
+  // ============================================
+  async function generateWithAI() {
+    const inv = invoices.find((i) => i.id === activeInvoiceId);
+    if (!inv) return;
 
-  aiButton.disabled = true;
-  const originalText = aiTextEl.textContent;
-  aiTextEl.textContent = "Generating...";
-  messageEl.value =
-    "AI is writing a personalized message...\n\nThis may take 5-10 seconds.";
+    // Credits check
+    if (!hasAnyApiKey() && !isPro() && getCurrentCredits() < CREDITS_PER_TASK) {
+      showBuyCreditsModal();
+      return;
+    }
 
-  try {
-    const message = await generateReminderMessageWithAI(inv);
-    messageEl.value = message;
-    updateAIText();
-  } catch (err) {
-    console.error("AI generation failed:", err);
-    messageEl.value = buildTemplateMessage(inv, currentTemplate);
-    showToast(
-      "AI is temporarily unavailable. Using a template instead.",
-      "warning",
-      "AI generation failed",
-    );
-  } finally {
-    aiButton.disabled = false;
-    aiTextEl.textContent = originalText;
+    const messageEl = document.getElementById("reminderMessage");
+    const aiButton = document.getElementById("generateWithAIButton");
+    const aiTextEl = document.getElementById("aiButtonText");
+
+    aiButton.disabled = true;
+    const originalText = aiTextEl.textContent;
+    aiTextEl.textContent = "Generating...";
+    messageEl.value =
+      "AI is writing a personalized message...\n\nThis may take 5-10 seconds.";
+
+    try {
+      const message = await generateReminderMessageWithAI(inv);
+      messageEl.value = message;
+      updateAIText();
+    } catch (err) {
+      console.error("AI generation failed:", err);
+      messageEl.value = buildTemplateMessage(inv, currentTemplate);
+      showToast(
+        "AI is temporarily unavailable. Using a template instead.",
+        "warning",
+        "AI generation failed",
+      );
+    } finally {
+      aiButton.disabled = false;
+      aiTextEl.textContent = originalText;
+    }
   }
-}
 
-// AI se reminder generate karo
-async function generateReminderMessageWithAI(inv) {
-  const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
-  const lateFee = calculateLateFee(inv);
-  const yourName = settings.yourName || "Your name";
+  // AI se reminder generate karo
+  async function generateReminderMessageWithAI(inv) {
+    const overdueDays = inv.dueDate ? daysDiff(inv.dueDate, todayISO()) : 0;
+    const lateFee = calculateLateFee(inv);
+    const yourName = settings.yourName || "Your name";
 
-  const prompt = `You are an expert at writing polite but effective payment reminder emails for freelancers.
+    const prompt = `You are an expert at writing polite but effective payment reminder emails for freelancers.
 
 Write ONE short email (under 120 words) to a client about an overdue invoice.
 
@@ -2003,247 +2017,253 @@ Subject: [subject line]
 
 [email body]`;
 
-  const response = await fetch("/api/generate", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      prompt,
-      taskType: "reminder",
-      userApiKeys: getUserApiKeys(),
-    }),
-  });
+    const response = await fetch("/api/generate", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        prompt,
+        taskType: "reminder",
+        userApiKeys: getUserApiKeys(),
+      }),
+    });
 
-  const data = await response.json();
+    const data = await response.json();
 
-  if (!response.ok || !data.success) {
-    throw new Error(data.error || "AI generation failed");
-  }
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || "AI generation failed");
+    }
 
-  // Credits deduct karo success ke baad
-  const creditResult = await deductTaskCredits(
-    "reminder",
-    `AI reminder for ${inv.clientName}`,
-  );
-  if (creditResult.source === "credits") {
-    console.log(`✓ 1 credit deducted. New balance: ${creditResult.newBalance}`);
-  } else if (creditResult.source === "byok") {
-    console.log("✓ BYOK user — no credits deducted");
-  }
-
-  return data.text;
-}
-
-// ============================================
-// SEND WHATSAPP / EMAIL
-// ============================================
-async function sendWhatsApp() {
-  const inv = invoices.find((i) => i.id === activeInvoiceId);
-  if (!inv) return;
-
-  const message = document.getElementById("reminderMessage").value;
-  const phone = (inv.clientPhone || "").replace(/[^0-9]/g, "");
-  if (!phone) {
-    showToast(
-      "Client phone number is missing. Please add it first.",
-      "warning",
+    // Credits deduct karo success ke baad
+    const creditResult = await deductTaskCredits(
+      "reminder",
+      `AI reminder for ${inv.clientName}`,
     );
-    return;
+    if (creditResult.source === "credits") {
+      console.log(
+        `✓ 1 credit deducted. New balance: ${creditResult.newBalance}`,
+      );
+    } else if (creditResult.source === "byok") {
+      console.log("✓ BYOK user — no credits deducted");
+    }
+
+    return data.text;
   }
 
-  window.open(
-    `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
-    "_blank",
-  );
+  // ============================================
+  // SEND WHATSAPP / EMAIL
+  // ============================================
+  async function sendWhatsApp() {
+    const inv = invoices.find((i) => i.id === activeInvoiceId);
+    if (!inv) return;
 
-  inv.remindersSent = (inv.remindersSent || 0) + 1;
-  inv.lastTouchpoint = todayISO();
-  saveInvoices();
-  document.getElementById("reminderModal").classList.add("hidden");
-  refreshAll();
-  showToast("WhatsApp opened — send the message to complete", "success");
-}
+    const message = document.getElementById("reminderMessage").value;
+    const phone = (inv.clientPhone || "").replace(/[^0-9]/g, "");
+    if (!phone) {
+      showToast(
+        "Client phone number is missing. Please add it first.",
+        "warning",
+      );
+      return;
+    }
 
-async function sendEmail() {
-  const inv = invoices.find((i) => i.id === activeInvoiceId);
-  if (!inv) return;
+    window.open(
+      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`,
+      "_blank",
+    );
 
-  const message = document.getElementById("reminderMessage").value;
-  const subject = inv.invoiceNumber
-    ? `Invoice ${inv.invoiceNumber} — Follow-up`
-    : `Invoice Follow-up`;
-
-  try {
-    await navigator.clipboard.writeText(message);
-  } catch (e) {}
-
-  if (inv.clientEmail) {
-    const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
-    window.location.href = mailto;
-    showToast("Email client opened — message copied to clipboard", "success");
-  } else {
-    showToast("Client email missing. Message copied to clipboard.", "warning");
+    inv.remindersSent = (inv.remindersSent || 0) + 1;
+    inv.lastTouchpoint = todayISO();
+    saveInvoices();
+    document.getElementById("reminderModal").classList.add("hidden");
+    refreshAll();
+    showToast("WhatsApp opened — send the message to complete", "success");
   }
 
-  inv.remindersSent = (inv.remindersSent || 0) + 1;
-  inv.lastTouchpoint = todayISO();
-  saveInvoices();
-  document.getElementById("reminderModal").classList.add("hidden");
-  refreshAll();
-}
+  async function sendEmail() {
+    const inv = invoices.find((i) => i.id === activeInvoiceId);
+    if (!inv) return;
 
-function copyMessage() {
-  const message = document.getElementById("reminderMessage").value;
-  navigator.clipboard.writeText(message);
-  const btn = document.getElementById("copyMessageBtn");
-  const orig = btn.textContent;
-  btn.textContent = "Copied!";
-  setTimeout(() => (btn.textContent = orig), 1500);
-}
+    const message = document.getElementById("reminderMessage").value;
+    const subject = inv.invoiceNumber
+      ? `Invoice ${inv.invoiceNumber} — Follow-up`
+      : `Invoice Follow-up`;
 
-// ============================================
-// MARK AS PAID
-// ============================================
-async function markAsPaid(inv) {
-  const ok = await showConfirm(
-    `Mark payment received from ${inv.clientName}?\n\nAmount: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}`,
-    { title: "Confirm payment", type: "success", okText: "Mark as paid" },
-  );
-  if (!ok) return;
+    try {
+      await navigator.clipboard.writeText(message);
+    } catch (e) {}
 
-  inv.status = "paid";
-  inv.paidAt = todayISO();
-  saveInvoices();
-  document.getElementById("detailModal")?.classList.add("hidden");
-  refreshAll();
-  showToast(`Payment marked for ${inv.clientName}`, "success");
-}
+    if (inv.clientEmail) {
+      const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(message)}`;
+      window.location.href = mailto;
+      showToast("Email client opened — message copied to clipboard", "success");
+    } else {
+      showToast(
+        "Client email missing. Message copied to clipboard.",
+        "warning",
+      );
+    }
 
-// ============================================
-// CALL LOG
-// ============================================
-function openCallLogModal(inv) {
-  activeCallLogInvoiceId = inv.id;
-  document.getElementById("callDate").value = todayISO();
-  document.getElementById("callDuration").value = "";
-  document.getElementById("callOutcome").value = "answered";
-  document.getElementById("callNotes").value = "";
-  document.getElementById("callLogModal").classList.remove("hidden");
-}
-
-function closeCallLogModal() {
-  document.getElementById("callLogModal").classList.add("hidden");
-  activeCallLogInvoiceId = null;
-}
-
-function saveCallLog() {
-  const inv = invoices.find((i) => i.id === activeCallLogInvoiceId);
-  if (!inv) return;
-
-  const date = document.getElementById("callDate").value;
-  const duration = parseInt(document.getElementById("callDuration").value) || 0;
-  const outcome = document.getElementById("callOutcome").value;
-  const notes = document.getElementById("callNotes").value.trim();
-
-  if (!date) {
-    showToast("Please enter the call date.", "warning");
-    return;
+    inv.remindersSent = (inv.remindersSent || 0) + 1;
+    inv.lastTouchpoint = todayISO();
+    saveInvoices();
+    document.getElementById("reminderModal").classList.add("hidden");
+    refreshAll();
   }
 
-  if (!inv.callLogs) inv.callLogs = [];
+  function copyMessage() {
+    const message = document.getElementById("reminderMessage").value;
+    navigator.clipboard.writeText(message);
+    const btn = document.getElementById("copyMessageBtn");
+    const orig = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => (btn.textContent = orig), 1500);
+  }
 
-  inv.callLogs.push({
-    date,
-    duration,
-    outcome,
-    notes,
-    loggedAt: new Date().toISOString(),
-  });
-  inv.lastTouchpoint = date;
-  saveInvoices();
-  closeCallLogModal();
-  refreshAll();
-  showToast("Call logged", "success");
-}
+  // ============================================
+  // MARK AS PAID
+  // ============================================
+  async function markAsPaid(inv) {
+    const ok = await showConfirm(
+      `Mark payment received from ${inv.clientName}?\n\nAmount: ${formatAmount(getTotalWithLateFee(inv), inv.currency)}`,
+      { title: "Confirm payment", type: "success", okText: "Mark as paid" },
+    );
+    if (!ok) return;
 
-// ============================================
-// CLIENT SAYS PAID
-// ============================================
-async function markClientSaysPaid(inv) {
-  const ok = await showConfirm(
-    `Mark "${inv.clientName}" as "Client says paid"?\n\nYou'll be reminded to verify in 3 days.`,
-    { title: "Client says paid", type: "info", okText: "Confirm" },
-  );
-  if (!ok) return;
+    inv.status = "paid";
+    inv.paidAt = todayISO();
+    saveInvoices();
+    document.getElementById("detailModal")?.classList.add("hidden");
+    refreshAll();
+    showToast(`Payment marked for ${inv.clientName}`, "success");
+  }
 
-  inv.status = "client_says_paid";
-  inv.clientSaysPaidAt = todayISO();
-  inv.lastTouchpoint = todayISO();
-  saveInvoices();
-  document.getElementById("detailModal")?.classList.add("hidden");
-  refreshAll();
-  showToast(`${inv.clientName} marked as paid — verify in 3 days`, "info");
-}
+  // ============================================
+  // CALL LOG
+  // ============================================
+  function openCallLogModal(inv) {
+    activeCallLogInvoiceId = inv.id;
+    document.getElementById("callDate").value = todayISO();
+    document.getElementById("callDuration").value = "";
+    document.getElementById("callOutcome").value = "answered";
+    document.getElementById("callNotes").value = "";
+    document.getElementById("callLogModal").classList.remove("hidden");
+  }
 
-function openPaymentConfirmModal(inv) {
-  activePaymentConfirmInvoiceId = inv.id;
-  document.getElementById("confirmClientName").textContent = inv.clientName;
-  document.getElementById("confirmAmount").textContent = formatAmount(
-    getTotalWithLateFee(inv),
-    inv.currency,
-  );
-  document.getElementById("confirmMarkedDate").textContent = formatDate(
-    inv.clientSaysPaidAt,
-  );
-  document.getElementById("paymentConfirmModal").classList.remove("hidden");
-}
+  function closeCallLogModal() {
+    document.getElementById("callLogModal").classList.add("hidden");
+    activeCallLogInvoiceId = null;
+  }
 
-function closePaymentConfirmModal() {
-  document.getElementById("paymentConfirmModal").classList.add("hidden");
-  activePaymentConfirmInvoiceId = null;
-}
+  function saveCallLog() {
+    const inv = invoices.find((i) => i.id === activeCallLogInvoiceId);
+    if (!inv) return;
 
-function confirmPaymentReceived() {
-  const inv = invoices.find((i) => i.id === activePaymentConfirmInvoiceId);
-  if (!inv) return;
+    const date = document.getElementById("callDate").value;
+    const duration =
+      parseInt(document.getElementById("callDuration").value) || 0;
+    const outcome = document.getElementById("callOutcome").value;
+    const notes = document.getElementById("callNotes").value.trim();
 
-  inv.status = "paid";
-  inv.paidAt = todayISO();
-  saveInvoices();
-  closePaymentConfirmModal();
-  refreshAll();
-  showToast(`Payment confirmed for ${inv.clientName}`, "success");
-}
+    if (!date) {
+      showToast("Please enter the call date.", "warning");
+      return;
+    }
 
-// ============================================
-// DEMAND LETTER — Template default, AI optional
-// ============================================
-async function openDemandLetterModal(inv) {
-  activeDemandLetterInvoiceId = inv.id;
-  document.getElementById("demandLetterContent").value =
-    buildTemplateDemandLetter(inv);
-  document.getElementById("demandLetterModal").classList.remove("hidden");
-}
+    if (!inv.callLogs) inv.callLogs = [];
 
-// Template-based demand letter
-function buildTemplateDemandLetter(inv) {
-  const yourName = settings.yourName || "[Your Name]";
-  const totalDue = getTotalWithLateFee(inv);
-  const today = new Date();
-  const deadline = new Date();
-  deadline.setDate(deadline.getDate() + 7);
+    inv.callLogs.push({
+      date,
+      duration,
+      outcome,
+      notes,
+      loggedAt: new Date().toISOString(),
+    });
+    inv.lastTouchpoint = date;
+    saveInvoices();
+    closeCallLogModal();
+    refreshAll();
+    showToast("Call logged", "success");
+  }
 
-  const deadlineStr = deadline.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-  const todayStr = today.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  // ============================================
+  // CLIENT SAYS PAID
+  // ============================================
+  async function markClientSaysPaid(inv) {
+    const ok = await showConfirm(
+      `Mark "${inv.clientName}" as "Client says paid"?\n\nYou'll be reminded to verify in 3 days.`,
+      { title: "Client says paid", type: "info", okText: "Confirm" },
+    );
+    if (!ok) return;
 
-  return `FORMAL DEMAND FOR PAYMENT
+    inv.status = "client_says_paid";
+    inv.clientSaysPaidAt = todayISO();
+    inv.lastTouchpoint = todayISO();
+    saveInvoices();
+    document.getElementById("detailModal")?.classList.add("hidden");
+    refreshAll();
+    showToast(`${inv.clientName} marked as paid — verify in 3 days`, "info");
+  }
+
+  function openPaymentConfirmModal(inv) {
+    activePaymentConfirmInvoiceId = inv.id;
+    document.getElementById("confirmClientName").textContent = inv.clientName;
+    document.getElementById("confirmAmount").textContent = formatAmount(
+      getTotalWithLateFee(inv),
+      inv.currency,
+    );
+    document.getElementById("confirmMarkedDate").textContent = formatDate(
+      inv.clientSaysPaidAt,
+    );
+    document.getElementById("paymentConfirmModal").classList.remove("hidden");
+  }
+
+  function closePaymentConfirmModal() {
+    document.getElementById("paymentConfirmModal").classList.add("hidden");
+    activePaymentConfirmInvoiceId = null;
+  }
+
+  function confirmPaymentReceived() {
+    const inv = invoices.find((i) => i.id === activePaymentConfirmInvoiceId);
+    if (!inv) return;
+
+    inv.status = "paid";
+    inv.paidAt = todayISO();
+    saveInvoices();
+    closePaymentConfirmModal();
+    refreshAll();
+    showToast(`Payment confirmed for ${inv.clientName}`, "success");
+  }
+
+  // ============================================
+  // DEMAND LETTER — Template default, AI optional
+  // ============================================
+  async function openDemandLetterModal(inv) {
+    activeDemandLetterInvoiceId = inv.id;
+    document.getElementById("demandLetterContent").value =
+      buildTemplateDemandLetter(inv);
+    document.getElementById("demandLetterModal").classList.remove("hidden");
+  }
+
+  // Template-based demand letter
+  function buildTemplateDemandLetter(inv) {
+    const yourName = settings.yourName || "[Your Name]";
+    const totalDue = getTotalWithLateFee(inv);
+    const today = new Date();
+    const deadline = new Date();
+    deadline.setDate(deadline.getDate() + 7);
+
+    const deadlineStr = deadline.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+    const todayStr = today.toLocaleDateString("en-IN", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    return `FORMAL DEMAND FOR PAYMENT
 
 Date: ${todayStr}
 
@@ -2282,26 +2302,26 @@ Sincerely,
 ${yourName}
 ${settings.yourEmail || ""}
 ${settings.yourPhone || ""}`;
-}
+  }
 
-function closeDemandLetterModal() {
-  document.getElementById("demandLetterModal").classList.add("hidden");
-  activeDemandLetterInvoiceId = null;
-}
+  function closeDemandLetterModal() {
+    document.getElementById("demandLetterModal").classList.add("hidden");
+    activeDemandLetterInvoiceId = null;
+  }
 
-function copyDemandLetter() {
-  const content = document.getElementById("demandLetterContent").value;
-  navigator.clipboard.writeText(content);
-  const btn = document.getElementById("copyDemandLetterBtn");
-  const orig = btn.textContent;
-  btn.textContent = "Copied!";
-  setTimeout(() => (btn.textContent = orig), 1500);
-}
+  function copyDemandLetter() {
+    const content = document.getElementById("demandLetterContent").value;
+    navigator.clipboard.writeText(content);
+    const btn = document.getElementById("copyDemandLetterBtn");
+    const orig = btn.textContent;
+    btn.textContent = "Copied!";
+    setTimeout(() => (btn.textContent = orig), 1500);
+  }
 
-function downloadDemandLetterPDF() {
-  const content = document.getElementById("demandLetterContent").value;
-  const printWindow = window.open("", "_blank");
-  printWindow.document.write(`
+  function downloadDemandLetterPDF() {
+    const content = document.getElementById("demandLetterContent").value;
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -2317,520 +2337,528 @@ function downloadDemandLetterPDF() {
     </body>
     </html>
   `);
-  printWindow.document.close();
-}
-
-async function sendDemandLetterEmail() {
-  const inv = invoices.find((i) => i.id === activeDemandLetterInvoiceId);
-  if (!inv) return;
-
-  const content = document.getElementById("demandLetterContent").value;
-  const subject = `FINAL NOTICE: Overdue Invoice${inv.invoiceNumber ? " #" + inv.invoiceNumber : ""}`;
-
-  if (!inv.clientEmail) {
-    showToast(
-      "Client email is missing. Letter copied to clipboard.",
-      "warning",
-    );
-    navigator.clipboard.writeText(content);
-    return;
+    printWindow.document.close();
   }
 
-  inv.demandLetterSentAt = todayISO();
-  inv.lastTouchpoint = todayISO();
-  saveInvoices();
+  async function sendDemandLetterEmail() {
+    const inv = invoices.find((i) => i.id === activeDemandLetterInvoiceId);
+    if (!inv) return;
 
-  const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
-  window.location.href = mailto;
+    const content = document.getElementById("demandLetterContent").value;
+    const subject = `FINAL NOTICE: Overdue Invoice${inv.invoiceNumber ? " #" + inv.invoiceNumber : ""}`;
 
-  closeDemandLetterModal();
-  refreshAll();
-  showToast("Demand letter opened in your email client", "success");
-}
-
-// ============================================
-// SETTINGS MODAL
-// ============================================
-function openSettingsModal() {
-  document.getElementById("sYourName").value = settings.yourName || "";
-  document.getElementById("sYourEmail").value = settings.yourEmail || "";
-  document.getElementById("sYourPhone").value = settings.yourPhone || "";
-  document.getElementById("sCurrency").value = settings.currency || "INR";
-  document.getElementById("sDay1").value = settings.days1 || 3;
-  document.getElementById("sDay2").value = settings.days2 || 7;
-  document.getElementById("sDay3").value = settings.days3 || 14;
-
-  const autoRadio = document.querySelector(
-    `input[name="automation"][value="${settings.automation || "guided"}"]`,
-  );
-  if (autoRadio) autoRadio.checked = true;
-
-  document.getElementById("settingsModal").classList.remove("hidden");
-}
-
-function closeSettingsModal() {
-  document.getElementById("settingsModal").classList.add("hidden");
-}
-
-async function saveSettingsFromModal() {
-  const newName = document.getElementById("sYourName").value.trim();
-
-  settings.yourName = newName;
-  settings.yourEmail = document.getElementById("sYourEmail").value.trim();
-  settings.yourPhone = document.getElementById("sYourPhone").value.trim();
-  settings.currency = document.getElementById("sCurrency").value;
-  settings.days1 = Number(document.getElementById("sDay1").value) || 3;
-  settings.days2 = Number(document.getElementById("sDay2").value) || 7;
-  settings.days3 = Number(document.getElementById("sDay3").value) || 14;
-
-  const autoRadio = document.querySelector('input[name="automation"]:checked');
-  if (autoRadio) settings.automation = autoRadio.value;
-
-  saveSettings();
-
-  // ✅ Supabase mein bhi update karo (agar logged in hai)
-  if (!isGuestMode && currentUser) {
-    try {
-      // Update users table (full_name)
-      if (newName) {
-        await window.supabaseClient
-          .from("users")
-          .update({ full_name: newName })
-          .eq("id", currentUser.id);
-
-        // Local userProfile update karo
-        if (userProfile) userProfile.full_name = newName;
-      }
-
-      // Update settings table
-      await window.supabaseClient.from("settings").upsert({
-        user_id: currentUser.id,
-        default_currency: settings.currency,
-        reminder_days: [settings.days1, settings.days2, settings.days3],
-        automation_mode: settings.automation,
-      });
-    } catch (err) {
-      console.error("Supabase settings update error:", err);
+    if (!inv.clientEmail) {
+      showToast(
+        "Client email is missing. Letter copied to clipboard.",
+        "warning",
+      );
+      navigator.clipboard.writeText(content);
+      return;
     }
+
+    inv.demandLetterSentAt = todayISO();
+    inv.lastTouchpoint = todayISO();
+    saveInvoices();
+
+    const mailto = `mailto:${inv.clientEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
+    window.location.href = mailto;
+
+    closeDemandLetterModal();
+    refreshAll();
+    showToast("Demand letter opened in your email client", "success");
   }
 
-  closeSettingsModal();
-  await refreshAll();
-  showToast("Settings saved", "success");
-}
+  // ============================================
+  // SETTINGS MODAL
+  // ============================================
+  function openSettingsModal() {
+    document.getElementById("sYourName").value = settings.yourName || "";
+    document.getElementById("sYourEmail").value = settings.yourEmail || "";
+    document.getElementById("sYourPhone").value = settings.yourPhone || "";
+    document.getElementById("sCurrency").value = settings.currency || "INR";
+    document.getElementById("sDay1").value = settings.days1 || 3;
+    document.getElementById("sDay2").value = settings.days2 || 7;
+    document.getElementById("sDay3").value = settings.days3 || 14;
 
-// ============================================
-// API KEY MODAL — Multi-provider
-// ============================================
-function openApiKeyModal() {
-  const keys = getUserApiKeys();
-  document.getElementById("groqKeyInput").value = keys.groq || "";
-  document.getElementById("geminiKeyInput").value = keys.gemini || "";
-  document.getElementById("openaiKeyInput").value = keys.openai || "";
-  document.getElementById("apiKeyStatus").textContent = "";
-  document.getElementById("apiKeyStatus").className = "import-hint";
-  document.getElementById("apiKeyModal").classList.remove("hidden");
-}
+    const autoRadio = document.querySelector(
+      `input[name="automation"][value="${settings.automation || "guided"}"]`,
+    );
+    if (autoRadio) autoRadio.checked = true;
 
-function closeApiKeyModal() {
-  document.getElementById("apiKeyModal").classList.add("hidden");
-}
-
-function saveApiKeysFromModal() {
-  const groq = document.getElementById("groqKeyInput").value.trim();
-  const gemini = document.getElementById("geminiKeyInput").value.trim();
-  const openai = document.getElementById("openaiKeyInput").value.trim();
-  const statusEl = document.getElementById("apiKeyStatus");
-
-  if (groq && !groq.startsWith("gsk_")) {
-    statusEl.textContent = "Groq key should start with 'gsk_'.";
-    statusEl.className = "import-hint";
-    return;
-  }
-  if (gemini && !gemini.startsWith("AIza")) {
-    statusEl.textContent = "Gemini key should start with 'AIza'.";
-    statusEl.className = "import-hint";
-    return;
-  }
-  if (openai && !openai.startsWith("sk-")) {
-    statusEl.textContent = "OpenAI key should start with 'sk-'.";
-    statusEl.className = "import-hint";
-    return;
+    document.getElementById("settingsModal").classList.remove("hidden");
   }
 
-  if (!groq && !gemini && !openai) {
-    statusEl.textContent = "Please enter at least one API key.";
-    statusEl.className = "import-hint";
-    return;
+  function closeSettingsModal() {
+    document.getElementById("settingsModal").classList.add("hidden");
   }
 
-  const keys = {};
-  if (groq) keys.groq = groq;
-  if (gemini) keys.gemini = gemini;
-  if (openai) keys.openai = openai;
-  setUserApiKeys(keys);
+  async function saveSettingsFromModal() {
+    const newName = document.getElementById("sYourName").value.trim();
 
-  statusEl.textContent = "Saved! You now have unlimited free AI tasks.";
-  statusEl.className = "import-hint success";
+    settings.yourName = newName;
+    settings.yourEmail = document.getElementById("sYourEmail").value.trim();
+    settings.yourPhone = document.getElementById("sYourPhone").value.trim();
+    settings.currency = document.getElementById("sCurrency").value;
+    settings.days1 = Number(document.getElementById("sDay1").value) || 3;
+    settings.days2 = Number(document.getElementById("sDay2").value) || 7;
+    settings.days3 = Number(document.getElementById("sDay3").value) || 14;
 
-  setTimeout(async () => {
-    closeApiKeyModal();
-    await renderUserMenu();
-    showToast("API key saved. AI generation is now unlimited.", "success");
-  }, 1500);
-}
+    const autoRadio = document.querySelector(
+      'input[name="automation"]:checked',
+    );
+    if (autoRadio) settings.automation = autoRadio.value;
 
-// ============================================
-// BUY CREDITS MODAL + Razorpay
-// ============================================
-function showBuyCreditsModal() {
-  const modal = document.getElementById("buyCreditsModal");
-  if (!modal) return;
+    saveSettings();
 
-  selectedCreditPack = null;
-  const statusEl = document.getElementById("buyCreditsStatus");
-  if (statusEl) statusEl.textContent = "";
+    // ✅ Supabase mein bhi update karo (agar logged in hai)
+    if (!isGuestMode && currentUser) {
+      try {
+        // Update users table (full_name)
+        if (newName) {
+          await window.supabaseClient
+            .from("users")
+            .update({ full_name: newName })
+            .eq("id", currentUser.id);
 
-  document
-    .querySelectorAll(".credit-pack")
-    .forEach((p) => p.classList.remove("selected"));
-
-  const hintEl = document.getElementById("buyCreditsHint");
-  if (hintEl && isGuestMode) {
-    hintEl.innerHTML =
-      "⚠️ <strong>Sign up first</strong> to buy credits. Guest accounts cannot purchase — only BYOK.";
-  } else if (hintEl) {
-    hintEl.textContent =
-      "Pick a credit pack. Credits never expire — use them whenever you need AI.";
-  }
-
-  // Clone to remove old listeners
-  document.querySelectorAll(".credit-pack").forEach((pack) => {
-    const newPack = pack.cloneNode(true);
-    pack.parentNode.replaceChild(newPack, pack);
-  });
-
-  // Fresh listeners
-  document.querySelectorAll(".credit-pack").forEach((pack) => {
-    pack.addEventListener("click", async () => {
-      // Guest check — custom confirm
-      if (isGuestMode) {
-        const goSignup = await showConfirm(
-          "Buying credits requires an account.\n\nSign up free — you'll also get 15 bonus credits (25 total).",
-          {
-            title: "Sign up required",
-            type: "info",
-            okText: "Sign up",
-            cancelText: "Not now",
-          },
-        );
-        if (goSignup) {
-          window.location.href = "signup.html";
+          // Local userProfile update karo
+          if (userProfile) userProfile.full_name = newName;
         }
-        return;
+
+        // Update settings table
+        await window.supabaseClient.from("settings").upsert({
+          user_id: currentUser.id,
+          default_currency: settings.currency,
+          reminder_days: [settings.days1, settings.days2, settings.days3],
+          automation_mode: settings.automation,
+        });
+      } catch (err) {
+        console.error("Supabase settings update error:", err);
+      }
+    }
+
+    closeSettingsModal();
+    await refreshAll();
+    showToast("Settings saved", "success");
+  }
+
+  // ============================================
+  // API KEY MODAL — Multi-provider
+  // ============================================
+  function openApiKeyModal() {
+    const keys = getUserApiKeys();
+    document.getElementById("groqKeyInput").value = keys.groq || "";
+    document.getElementById("geminiKeyInput").value = keys.gemini || "";
+    document.getElementById("openaiKeyInput").value = keys.openai || "";
+    document.getElementById("apiKeyStatus").textContent = "";
+    document.getElementById("apiKeyStatus").className = "import-hint";
+    document.getElementById("apiKeyModal").classList.remove("hidden");
+  }
+
+  function closeApiKeyModal() {
+    document.getElementById("apiKeyModal").classList.add("hidden");
+  }
+
+  function saveApiKeysFromModal() {
+    const groq = document.getElementById("groqKeyInput").value.trim();
+    const gemini = document.getElementById("geminiKeyInput").value.trim();
+    const openai = document.getElementById("openaiKeyInput").value.trim();
+    const statusEl = document.getElementById("apiKeyStatus");
+
+    if (groq && !groq.startsWith("gsk_")) {
+      statusEl.textContent = "Groq key should start with 'gsk_'.";
+      statusEl.className = "import-hint";
+      return;
+    }
+    if (gemini && !gemini.startsWith("AIza")) {
+      statusEl.textContent = "Gemini key should start with 'AIza'.";
+      statusEl.className = "import-hint";
+      return;
+    }
+    if (openai && !openai.startsWith("sk-")) {
+      statusEl.textContent = "OpenAI key should start with 'sk-'.";
+      statusEl.className = "import-hint";
+      return;
+    }
+
+    if (!groq && !gemini && !openai) {
+      statusEl.textContent = "Please enter at least one API key.";
+      statusEl.className = "import-hint";
+      return;
+    }
+
+    const keys = {};
+    if (groq) keys.groq = groq;
+    if (gemini) keys.gemini = gemini;
+    if (openai) keys.openai = openai;
+    setUserApiKeys(keys);
+
+    statusEl.textContent = "Saved! You now have unlimited free AI tasks.";
+    statusEl.className = "import-hint success";
+
+    setTimeout(async () => {
+      closeApiKeyModal();
+      await renderUserMenu();
+      showToast("API key saved. AI generation is now unlimited.", "success");
+    }, 1500);
+  }
+
+  // ============================================
+  // BUY CREDITS MODAL + Razorpay
+  // ============================================
+  function showBuyCreditsModal() {
+    const modal = document.getElementById("buyCreditsModal");
+    if (!modal) return;
+
+    selectedCreditPack = null;
+    const statusEl = document.getElementById("buyCreditsStatus");
+    if (statusEl) statusEl.textContent = "";
+
+    document
+      .querySelectorAll(".credit-pack")
+      .forEach((p) => p.classList.remove("selected"));
+
+    const hintEl = document.getElementById("buyCreditsHint");
+    if (hintEl && isGuestMode) {
+      hintEl.innerHTML =
+        "⚠️ <strong>Sign up first</strong> to buy credits. Guest accounts cannot purchase — only BYOK.";
+    } else if (hintEl) {
+      hintEl.textContent =
+        "Pick a credit pack. Credits never expire — use them whenever you need AI.";
+    }
+
+    // Clone to remove old listeners
+    document.querySelectorAll(".credit-pack").forEach((pack) => {
+      const newPack = pack.cloneNode(true);
+      pack.parentNode.replaceChild(newPack, pack);
+    });
+
+    // Fresh listeners
+    document.querySelectorAll(".credit-pack").forEach((pack) => {
+      pack.addEventListener("click", async () => {
+        // Guest check — custom confirm
+        if (isGuestMode) {
+          const goSignup = await showConfirm(
+            "Buying credits requires an account.\n\nSign up free — you'll also get 15 bonus credits (25 total).",
+            {
+              title: "Sign up required",
+              type: "info",
+              okText: "Sign up",
+              cancelText: "Not now",
+            },
+          );
+          if (goSignup) {
+            window.location.href = "signup.html";
+          }
+          return;
+        }
+
+        document
+          .querySelectorAll(".credit-pack")
+          .forEach((p) => p.classList.remove("selected"));
+        pack.classList.add("selected");
+
+        selectedCreditPack = {
+          credits: parseInt(pack.dataset.credits, 10),
+          amount: parseInt(pack.dataset.amount, 10),
+        };
+
+        startRazorpayCheckout();
+      });
+    });
+
+    modal.classList.remove("hidden");
+  }
+
+  async function startRazorpayCheckout() {
+    if (!selectedCreditPack) return;
+
+    const statusEl = document.getElementById("buyCreditsStatus");
+    if (statusEl) statusEl.textContent = "Opening payment...";
+
+    try {
+      const orderResponse = await fetch("/api/create-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: selectedCreditPack.amount,
+          currency: "INR",
+          credits: selectedCreditPack.credits,
+          userId: currentUser?.id || "guest",
+        }),
+      });
+
+      const orderData = await orderResponse.json();
+
+      if (!orderResponse.ok || !orderData.success) {
+        throw new Error(orderData.error || "Order creation failed");
       }
 
-      document
-        .querySelectorAll(".credit-pack")
-        .forEach((p) => p.classList.remove("selected"));
-      pack.classList.add("selected");
-
-      selectedCreditPack = {
-        credits: parseInt(pack.dataset.credits, 10),
-        amount: parseInt(pack.dataset.amount, 10),
+      const options = {
+        key: orderData.keyId,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "InvoiceFollow",
+        description: `${selectedCreditPack.credits} AI credits`,
+        order_id: orderData.orderId,
+        handler: function (response) {
+          verifyPayment(
+            response.razorpay_order_id,
+            response.razorpay_payment_id,
+            response.razorpay_signature,
+          );
+        },
+        prefill: {
+          name: userProfile?.full_name || "",
+          email: userProfile?.email || "",
+        },
+        theme: { color: "#4f46e5" },
+        modal: {
+          ondismiss: function () {
+            if (statusEl) statusEl.textContent = "";
+          },
+        },
       };
 
-      startRazorpayCheckout();
-    });
-  });
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      if (statusEl) statusEl.textContent = "";
+    } catch (err) {
+      console.error("Checkout error:", err);
+      if (statusEl) statusEl.textContent = "Error: " + err.message;
+      showToast("Could not start payment: " + err.message, "error");
+    }
+  }
 
-  modal.classList.remove("hidden");
-}
+  async function verifyPayment(orderId, paymentId, signature) {
+    const statusEl = document.getElementById("buyCreditsStatus");
+    if (statusEl) statusEl.textContent = "Verifying payment...";
 
-async function startRazorpayCheckout() {
-  if (!selectedCreditPack) return;
+    try {
+      const response = await fetch("/api/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          razorpay_order_id: orderId,
+          razorpay_payment_id: paymentId,
+          razorpay_signature: signature,
+          userId: currentUser?.id,
+          credits: selectedCreditPack.credits,
+        }),
+      });
 
-  const statusEl = document.getElementById("buyCreditsStatus");
-  if (statusEl) statusEl.textContent = "Opening payment...";
+      const data = await response.json();
 
-  try {
-    const orderResponse = await fetch("/api/create-order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        amount: selectedCreditPack.amount,
-        currency: "INR",
-        credits: selectedCreditPack.credits,
-        userId: currentUser?.id || "guest",
-      }),
-    });
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || "Verification failed");
+      }
 
-    const orderData = await orderResponse.json();
+      if (userProfile) userProfile.credits = data.newBalance;
 
-    if (!orderResponse.ok || !orderData.success) {
-      throw new Error(orderData.error || "Order creation failed");
+      if (statusEl) {
+        statusEl.textContent = `✓ ${data.creditsAdded} credits added! New balance: ${data.newBalance}`;
+      }
+
+      await renderUserMenu();
+      showToast(
+        `${data.creditsAdded} credits added to your account`,
+        "success",
+      );
+
+      setTimeout(() => {
+        document.getElementById("buyCreditsModal").classList.add("hidden");
+      }, 2000);
+    } catch (err) {
+      console.error("Verify error:", err);
+      if (statusEl) statusEl.textContent = "Error: " + err.message;
+      showToast(
+        "Payment verification failed. Contact support with payment ID: " +
+          paymentId,
+        "error",
+      );
+    }
+  }
+
+  // ============================================
+  // CSV IMPORT
+  // ============================================
+  function openImportModal() {
+    csvData = [];
+    csvHeaders = [];
+    columnMapping = {};
+    importStep = 1;
+    validInvoices = [];
+    invalidRows = [];
+
+    document.getElementById("csvFileInput").value = "";
+    document.getElementById("importStep1").classList.remove("hidden");
+    document.getElementById("importStep2").classList.add("hidden");
+    document.getElementById("importStep3").classList.add("hidden");
+    document.getElementById("importNextBtn").classList.add("hidden");
+    document.getElementById("importConfirmBtn").classList.add("hidden");
+    document.getElementById("importBackBtn").classList.add("hidden");
+
+    document.getElementById("importModal").classList.remove("hidden");
+  }
+
+  function closeImportModal() {
+    document.getElementById("importModal").classList.add("hidden");
+  }
+
+  function handleCSVFile(file) {
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      showToast(
+        "Only .csv files are supported. Please export your Excel file as CSV first.",
+        "warning",
+      );
+      return;
     }
 
-    const options = {
-      key: orderData.keyId,
-      amount: orderData.amount,
-      currency: orderData.currency,
-      name: "InvoiceFollow",
-      description: `${selectedCreditPack.credits} AI credits`,
-      order_id: orderData.orderId,
-      handler: function (response) {
-        verifyPayment(
-          response.razorpay_order_id,
-          response.razorpay_payment_id,
-          response.razorpay_signature,
-        );
+    if (file.size > 5 * 1024 * 1024) {
+      showToast(
+        "File is too large. Please upload a file under 5MB.",
+        "warning",
+      );
+      return;
+    }
+
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: function (results) {
+        if (results.data.length === 0) {
+          showToast("The CSV file is empty.", "warning");
+          return;
+        }
+
+        if (results.data.length > 500) {
+          showToast("You can import up to 500 invoices at a time.", "warning");
+          return;
+        }
+
+        csvData = results.data;
+        csvHeaders = results.meta.fields || [];
+        autoMapColumns();
+        goToStep(2);
       },
-      prefill: {
-        name: userProfile?.full_name || "",
-        email: userProfile?.email || "",
+      error: function (err) {
+        showToast("Could not parse CSV: " + err.message, "error");
       },
-      theme: { color: "#4f46e5" },
-      modal: {
-        ondismiss: function () {
-          if (statusEl) statusEl.textContent = "";
-        },
-      },
+    });
+  }
+
+  function autoMapColumns() {
+    const headerLower = csvHeaders.map((h) => h.toLowerCase().trim());
+
+    const fieldPatterns = {
+      clientName: [
+        "client name",
+        "clientname",
+        "client",
+        "name",
+        "customer",
+        "customer name",
+        "party",
+        "party name",
+      ],
+      clientPhone: [
+        "client phone",
+        "clientphone",
+        "phone",
+        "mobile",
+        "whatsapp",
+        "contact",
+        "phone number",
+        "mobile number",
+      ],
+      clientEmail: [
+        "client email",
+        "clientemail",
+        "email",
+        "e-mail",
+        "mail",
+        "email id",
+        "email address",
+      ],
+      invoiceNumber: [
+        "invoice number",
+        "invoicenumber",
+        "invoice #",
+        "invoice no",
+        "invoice",
+        "inv",
+        "inv no",
+        "bill no",
+      ],
+      amount: ["amount", "total", "value", "invoice amount", "amt", "price"],
+      currency: ["currency", "curr"],
+      dueDate: ["due date", "duedate", "due", "due on", "payment due"],
+      promiseDate: [
+        "promise date",
+        "promisedate",
+        "promise",
+        "promised date",
+        "commitment date",
+      ],
+      work: [
+        "work",
+        "what was the work?",
+        "what was the work",
+        "description",
+        "service",
+        "project",
+        "details",
+      ],
+      notes: ["notes", "remarks", "comment", "comments"],
     };
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-    if (statusEl) statusEl.textContent = "";
-  } catch (err) {
-    console.error("Checkout error:", err);
-    if (statusEl) statusEl.textContent = "Error: " + err.message;
-    showToast("Could not start payment: " + err.message, "error");
-  }
-}
-
-async function verifyPayment(orderId, paymentId, signature) {
-  const statusEl = document.getElementById("buyCreditsStatus");
-  if (statusEl) statusEl.textContent = "Verifying payment...";
-
-  try {
-    const response = await fetch("/api/verify-payment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        razorpay_order_id: orderId,
-        razorpay_payment_id: paymentId,
-        razorpay_signature: signature,
-        userId: currentUser?.id,
-        credits: selectedCreditPack.credits,
-      }),
+    Object.keys(fieldPatterns).forEach((field) => {
+      const patterns = fieldPatterns[field];
+      for (let i = 0; i < headerLower.length; i++) {
+        if (patterns.includes(headerLower[i])) {
+          columnMapping[field] = csvHeaders[i];
+          return;
+        }
+      }
     });
 
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      throw new Error(data.error || "Verification failed");
-    }
-
-    if (userProfile) userProfile.credits = data.newBalance;
-
-    if (statusEl) {
-      statusEl.textContent = `✓ ${data.creditsAdded} credits added! New balance: ${data.newBalance}`;
-    }
-
-    await renderUserMenu();
-    showToast(`${data.creditsAdded} credits added to your account`, "success");
-
-    setTimeout(() => {
-      document.getElementById("buyCreditsModal").classList.add("hidden");
-    }, 2000);
-  } catch (err) {
-    console.error("Verify error:", err);
-    if (statusEl) statusEl.textContent = "Error: " + err.message;
-    showToast(
-      "Payment verification failed. Contact support with payment ID: " +
-        paymentId,
-      "error",
-    );
-  }
-}
-
-// ============================================
-// CSV IMPORT
-// ============================================
-function openImportModal() {
-  csvData = [];
-  csvHeaders = [];
-  columnMapping = {};
-  importStep = 1;
-  validInvoices = [];
-  invalidRows = [];
-
-  document.getElementById("csvFileInput").value = "";
-  document.getElementById("importStep1").classList.remove("hidden");
-  document.getElementById("importStep2").classList.add("hidden");
-  document.getElementById("importStep3").classList.add("hidden");
-  document.getElementById("importNextBtn").classList.add("hidden");
-  document.getElementById("importConfirmBtn").classList.add("hidden");
-  document.getElementById("importBackBtn").classList.add("hidden");
-
-  document.getElementById("importModal").classList.remove("hidden");
-}
-
-function closeImportModal() {
-  document.getElementById("importModal").classList.add("hidden");
-}
-
-function handleCSVFile(file) {
-  if (!file.name.toLowerCase().endsWith(".csv")) {
-    showToast(
-      "Only .csv files are supported. Please export your Excel file as CSV first.",
-      "warning",
-    );
-    return;
+    console.log("Auto-mapped columns:", columnMapping);
   }
 
-  if (file.size > 5 * 1024 * 1024) {
-    showToast("File is too large. Please upload a file under 5MB.", "warning");
-    return;
-  }
+  function renderMappingUI() {
+    const fields = [
+      { key: "clientName", label: "Client Name", required: true },
+      { key: "clientPhone", label: "Client Phone", required: true },
+      { key: "clientEmail", label: "Client Email", required: false },
+      { key: "invoiceNumber", label: "Invoice Number", required: false },
+      { key: "amount", label: "Amount", required: true },
+      { key: "currency", label: "Currency", required: false },
+      { key: "dueDate", label: "Due Date", required: true },
+      { key: "promiseDate", label: "Promise Date", required: false },
+      { key: "work", label: "Work Description", required: false },
+      { key: "notes", label: "Notes", required: false },
+    ];
 
-  Papa.parse(file, {
-    header: true,
-    skipEmptyLines: true,
-    complete: function (results) {
-      if (results.data.length === 0) {
-        showToast("The CSV file is empty.", "warning");
-        return;
-      }
+    const grid = document.getElementById("mappingGrid");
+    grid.innerHTML = "";
 
-      if (results.data.length > 500) {
-        showToast("You can import up to 500 invoices at a time.", "warning");
-        return;
-      }
+    fields.forEach((field) => {
+      const row = document.createElement("div");
+      row.className = "mapping-row";
 
-      csvData = results.data;
-      csvHeaders = results.meta.fields || [];
-      autoMapColumns();
-      goToStep(2);
-    },
-    error: function (err) {
-      showToast("Could not parse CSV: " + err.message, "error");
-    },
-  });
-}
+      const required = field.required
+        ? '<span class="mapping-field-required">*</span>'
+        : "";
 
-function autoMapColumns() {
-  const headerLower = csvHeaders.map((h) => h.toLowerCase().trim());
+      const options = ['<option value="">— Skip —</option>']
+        .concat(
+          csvHeaders.map((h) => {
+            const selected = columnMapping[field.key] === h ? "selected" : "";
+            return `<option value="${escapeHtml(h)}" ${selected}>${escapeHtml(h)}</option>`;
+          }),
+        )
+        .join("");
 
-  const fieldPatterns = {
-    clientName: [
-      "client name",
-      "clientname",
-      "client",
-      "name",
-      "customer",
-      "customer name",
-      "party",
-      "party name",
-    ],
-    clientPhone: [
-      "client phone",
-      "clientphone",
-      "phone",
-      "mobile",
-      "whatsapp",
-      "contact",
-      "phone number",
-      "mobile number",
-    ],
-    clientEmail: [
-      "client email",
-      "clientemail",
-      "email",
-      "e-mail",
-      "mail",
-      "email id",
-      "email address",
-    ],
-    invoiceNumber: [
-      "invoice number",
-      "invoicenumber",
-      "invoice #",
-      "invoice no",
-      "invoice",
-      "inv",
-      "inv no",
-      "bill no",
-    ],
-    amount: ["amount", "total", "value", "invoice amount", "amt", "price"],
-    currency: ["currency", "curr"],
-    dueDate: ["due date", "duedate", "due", "due on", "payment due"],
-    promiseDate: [
-      "promise date",
-      "promisedate",
-      "promise",
-      "promised date",
-      "commitment date",
-    ],
-    work: [
-      "work",
-      "what was the work?",
-      "what was the work",
-      "description",
-      "service",
-      "project",
-      "details",
-    ],
-    notes: ["notes", "remarks", "comment", "comments"],
-  };
-
-  Object.keys(fieldPatterns).forEach((field) => {
-    const patterns = fieldPatterns[field];
-    for (let i = 0; i < headerLower.length; i++) {
-      if (patterns.includes(headerLower[i])) {
-        columnMapping[field] = csvHeaders[i];
-        return;
-      }
-    }
-  });
-
-  console.log("Auto-mapped columns:", columnMapping);
-}
-
-function renderMappingUI() {
-  const fields = [
-    { key: "clientName", label: "Client Name", required: true },
-    { key: "clientPhone", label: "Client Phone", required: true },
-    { key: "clientEmail", label: "Client Email", required: false },
-    { key: "invoiceNumber", label: "Invoice Number", required: false },
-    { key: "amount", label: "Amount", required: true },
-    { key: "currency", label: "Currency", required: false },
-    { key: "dueDate", label: "Due Date", required: true },
-    { key: "promiseDate", label: "Promise Date", required: false },
-    { key: "work", label: "Work Description", required: false },
-    { key: "notes", label: "Notes", required: false },
-  ];
-
-  const grid = document.getElementById("mappingGrid");
-  grid.innerHTML = "";
-
-  fields.forEach((field) => {
-    const row = document.createElement("div");
-    row.className = "mapping-row";
-
-    const required = field.required
-      ? '<span class="mapping-field-required">*</span>'
-      : "";
-
-    const options = ['<option value="">— Skip —</option>']
-      .concat(
-        csvHeaders.map((h) => {
-          const selected = columnMapping[field.key] === h ? "selected" : "";
-          return `<option value="${escapeHtml(h)}" ${selected}>${escapeHtml(h)}</option>`;
-        }),
-      )
-      .join("");
-
-    row.innerHTML = `
+      row.innerHTML = `
       <div class="mapping-field">${field.label}${required}</div>
       <div class="mapping-arrow">→</div>
       <select class="mapping-select" data-field="${field.key}">
@@ -2838,195 +2866,197 @@ function renderMappingUI() {
       </select>
     `;
 
-    grid.appendChild(row);
-  });
-
-  document.querySelectorAll(".mapping-select").forEach((sel) => {
-    sel.addEventListener("change", (e) => {
-      const field = e.target.dataset.field;
-      const value = e.target.value;
-      if (value) {
-        columnMapping[field] = value;
-      } else {
-        delete columnMapping[field];
-      }
-      updateImportNextButton();
+      grid.appendChild(row);
     });
-  });
 
-  document.getElementById("csvRowCount").textContent = csvData.length;
-  updateImportNextButton();
-}
+    document.querySelectorAll(".mapping-select").forEach((sel) => {
+      sel.addEventListener("change", (e) => {
+        const field = e.target.dataset.field;
+        const value = e.target.value;
+        if (value) {
+          columnMapping[field] = value;
+        } else {
+          delete columnMapping[field];
+        }
+        updateImportNextButton();
+      });
+    });
 
-function updateImportNextButton() {
-  const required = ["clientName", "clientPhone", "amount", "dueDate"];
-  const allMapped = required.every((f) => columnMapping[f]);
-
-  const btn = document.getElementById("importNextBtn");
-  if (allMapped) {
-    btn.disabled = false;
-    btn.classList.remove("hidden");
-  } else {
-    btn.disabled = true;
+    document.getElementById("csvRowCount").textContent = csvData.length;
+    updateImportNextButton();
   }
 
-  document.querySelectorAll(".mapping-select").forEach((sel) => {
-    const field = sel.dataset.field;
-    if (required.includes(field) && !sel.value) {
-      sel.classList.add("error");
+  function updateImportNextButton() {
+    const required = ["clientName", "clientPhone", "amount", "dueDate"];
+    const allMapped = required.every((f) => columnMapping[f]);
+
+    const btn = document.getElementById("importNextBtn");
+    if (allMapped) {
+      btn.disabled = false;
+      btn.classList.remove("hidden");
     } else {
-      sel.classList.remove("error");
-    }
-  });
-}
-
-function parseDate(str) {
-  if (!str) return null;
-  str = String(str).trim();
-
-  if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
-
-  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-  if (m) {
-    let day = m[1].padStart(2, "0");
-    let month = m[2].padStart(2, "0");
-    let year = m[3];
-    if (year.length === 2) year = "20" + year;
-    return `${year}-${month}-${day}`;
-  }
-
-  m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
-  if (m) {
-    return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
-  }
-
-  const d = new Date(str);
-  if (!isNaN(d.getTime())) {
-    return d.toISOString().split("T")[0];
-  }
-
-  return null;
-}
-
-function parseAmount(str) {
-  if (!str) return null;
-  const cleaned = String(str).replace(/[₹$€,\s]/g, "");
-  const num = parseFloat(cleaned);
-  if (isNaN(num) || num <= 0) return null;
-  return num;
-}
-
-function cleanPhone(str) {
-  if (!str) return "";
-  return String(str).replace(/[^0-9]/g, "");
-}
-
-function validateAndBuildInvoices() {
-  validInvoices = [];
-  invalidRows = [];
-
-  csvData.forEach((row, idx) => {
-    const errors = [];
-
-    const clientName = columnMapping.clientName
-      ? String(row[columnMapping.clientName] || "").trim()
-      : "";
-    const clientPhone = columnMapping.clientPhone
-      ? cleanPhone(row[columnMapping.clientPhone])
-      : "";
-    const clientEmail = columnMapping.clientEmail
-      ? String(row[columnMapping.clientEmail] || "").trim()
-      : "";
-    const invoiceNumber = columnMapping.invoiceNumber
-      ? String(row[columnMapping.invoiceNumber] || "").trim()
-      : "";
-    const amountRaw = columnMapping.amount ? row[columnMapping.amount] : "";
-    const currencyRaw = columnMapping.currency
-      ? String(row[columnMapping.currency] || "")
-          .trim()
-          .toUpperCase()
-      : "";
-    const dueDateRaw = columnMapping.dueDate ? row[columnMapping.dueDate] : "";
-    const promiseDateRaw = columnMapping.promiseDate
-      ? row[columnMapping.promiseDate]
-      : "";
-    const work = columnMapping.work
-      ? String(row[columnMapping.work] || "").trim()
-      : "";
-    const notes = columnMapping.notes
-      ? String(row[columnMapping.notes] || "").trim()
-      : "";
-
-    if (!clientName) errors.push("Client name missing");
-    if (!clientPhone) errors.push("Phone number missing");
-    if (clientPhone && clientPhone.length < 10)
-      errors.push("Phone number invalid (10+ digits required)");
-
-    const amount = parseAmount(amountRaw);
-    if (amount === null) errors.push("Amount missing or invalid");
-
-    const dueDate = parseDate(dueDateRaw);
-    if (!dueDate) errors.push("Due date missing or invalid");
-
-    const promiseDate = promiseDateRaw ? parseDate(promiseDateRaw) : null;
-    if (promiseDateRaw && !promiseDate)
-      errors.push("Promise date format invalid");
-
-    const validCurrencies = ["INR", "USD", "EUR"];
-    const currency = validCurrencies.includes(currencyRaw)
-      ? currencyRaw
-      : settings.currency || "INR";
-
-    if (errors.length > 0) {
-      invalidRows.push({ rowIndex: idx + 1, row, errors });
-      return;
+      btn.disabled = true;
     }
 
-    validInvoices.push({
-      id:
-        "inv_" +
-        Date.now() +
-        "_" +
-        idx +
-        "_" +
-        Math.random().toString(36).slice(2, 7),
-      clientName,
-      clientPhone: "+" + clientPhone,
-      clientEmail,
-      invoiceNumber,
-      amount,
-      currency,
-      dueDate,
-      promiseDate,
-      work,
-      notes,
-      status: "pending",
-      remindersSent: 0,
-      lastTouchpoint: null,
-      createdAt: todayISO(),
-      paidAt: null,
-      lateFeeType: null,
-      lateFeeValue: 0,
-      paymentStructure: "full",
-      depositAmount: 0,
-      depositReceived: false,
-      callLogs: [],
-      clientSaysPaidAt: null,
-      demandLetterSentAt: null,
+    document.querySelectorAll(".mapping-select").forEach((sel) => {
+      const field = sel.dataset.field;
+      if (required.includes(field) && !sel.value) {
+        sel.classList.add("error");
+      } else {
+        sel.classList.remove("error");
+      }
     });
-  });
-}
+  }
 
-function renderPreviewUI() {
-  validateAndBuildInvoices();
+  function parseDate(str) {
+    if (!str) return null;
+    str = String(str).trim();
 
-  document.getElementById("validCount").textContent = validInvoices.length;
-  document.getElementById("invalidCount").textContent = invalidRows.length;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
 
-  const table = document.getElementById("previewTable");
-  const previewInvoices = validInvoices.slice(0, 20);
+    let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (m) {
+      let day = m[1].padStart(2, "0");
+      let month = m[2].padStart(2, "0");
+      let year = m[3];
+      if (year.length === 2) year = "20" + year;
+      return `${year}-${month}-${day}`;
+    }
 
-  let html = `
+    m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+    if (m) {
+      return `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`;
+    }
+
+    const d = new Date(str);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split("T")[0];
+    }
+
+    return null;
+  }
+
+  function parseAmount(str) {
+    if (!str) return null;
+    const cleaned = String(str).replace(/[₹$€,\s]/g, "");
+    const num = parseFloat(cleaned);
+    if (isNaN(num) || num <= 0) return null;
+    return num;
+  }
+
+  function cleanPhone(str) {
+    if (!str) return "";
+    return String(str).replace(/[^0-9]/g, "");
+  }
+
+  function validateAndBuildInvoices() {
+    validInvoices = [];
+    invalidRows = [];
+
+    csvData.forEach((row, idx) => {
+      const errors = [];
+
+      const clientName = columnMapping.clientName
+        ? String(row[columnMapping.clientName] || "").trim()
+        : "";
+      const clientPhone = columnMapping.clientPhone
+        ? cleanPhone(row[columnMapping.clientPhone])
+        : "";
+      const clientEmail = columnMapping.clientEmail
+        ? String(row[columnMapping.clientEmail] || "").trim()
+        : "";
+      const invoiceNumber = columnMapping.invoiceNumber
+        ? String(row[columnMapping.invoiceNumber] || "").trim()
+        : "";
+      const amountRaw = columnMapping.amount ? row[columnMapping.amount] : "";
+      const currencyRaw = columnMapping.currency
+        ? String(row[columnMapping.currency] || "")
+            .trim()
+            .toUpperCase()
+        : "";
+      const dueDateRaw = columnMapping.dueDate
+        ? row[columnMapping.dueDate]
+        : "";
+      const promiseDateRaw = columnMapping.promiseDate
+        ? row[columnMapping.promiseDate]
+        : "";
+      const work = columnMapping.work
+        ? String(row[columnMapping.work] || "").trim()
+        : "";
+      const notes = columnMapping.notes
+        ? String(row[columnMapping.notes] || "").trim()
+        : "";
+
+      if (!clientName) errors.push("Client name missing");
+      if (!clientPhone) errors.push("Phone number missing");
+      if (clientPhone && clientPhone.length < 10)
+        errors.push("Phone number invalid (10+ digits required)");
+
+      const amount = parseAmount(amountRaw);
+      if (amount === null) errors.push("Amount missing or invalid");
+
+      const dueDate = parseDate(dueDateRaw);
+      if (!dueDate) errors.push("Due date missing or invalid");
+
+      const promiseDate = promiseDateRaw ? parseDate(promiseDateRaw) : null;
+      if (promiseDateRaw && !promiseDate)
+        errors.push("Promise date format invalid");
+
+      const validCurrencies = ["INR", "USD", "EUR"];
+      const currency = validCurrencies.includes(currencyRaw)
+        ? currencyRaw
+        : settings.currency || "INR";
+
+      if (errors.length > 0) {
+        invalidRows.push({ rowIndex: idx + 1, row, errors });
+        return;
+      }
+
+      validInvoices.push({
+        id:
+          "inv_" +
+          Date.now() +
+          "_" +
+          idx +
+          "_" +
+          Math.random().toString(36).slice(2, 7),
+        clientName,
+        clientPhone: "+" + clientPhone,
+        clientEmail,
+        invoiceNumber,
+        amount,
+        currency,
+        dueDate,
+        promiseDate,
+        work,
+        notes,
+        status: "pending",
+        remindersSent: 0,
+        lastTouchpoint: null,
+        createdAt: todayISO(),
+        paidAt: null,
+        lateFeeType: null,
+        lateFeeValue: 0,
+        paymentStructure: "full",
+        depositAmount: 0,
+        depositReceived: false,
+        callLogs: [],
+        clientSaysPaidAt: null,
+        demandLetterSentAt: null,
+      });
+    });
+  }
+
+  function renderPreviewUI() {
+    validateAndBuildInvoices();
+
+    document.getElementById("validCount").textContent = validInvoices.length;
+    document.getElementById("invalidCount").textContent = invalidRows.length;
+
+    const table = document.getElementById("previewTable");
+    const previewInvoices = validInvoices.slice(0, 20);
+
+    let html = `
     <thead>
       <tr>
         <th>Client</th>
@@ -3040,8 +3070,8 @@ function renderPreviewUI() {
     <tbody>
   `;
 
-  previewInvoices.forEach((inv) => {
-    html += `
+    previewInvoices.forEach((inv) => {
+      html += `
       <tr>
         <td>${escapeHtml(inv.clientName)}</td>
         <td>${escapeHtml(inv.clientPhone)}</td>
@@ -3051,19 +3081,19 @@ function renderPreviewUI() {
         <td><span class="inv-status status-pending">pending</span></td>
       </tr>
     `;
-  });
+    });
 
-  if (validInvoices.length > 20) {
-    html += `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1rem;">+ ${validInvoices.length - 20} more...</td></tr>`;
-  }
+    if (validInvoices.length > 20) {
+      html += `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1rem;">+ ${validInvoices.length - 20} more...</td></tr>`;
+    }
 
-  html += "</tbody>";
-  table.innerHTML = html;
+    html += "</tbody>";
+    table.innerHTML = html;
 
-  const errBox = document.getElementById("invalidErrors");
-  if (invalidRows.length > 0) {
-    errBox.classList.remove("hidden");
-    errBox.innerHTML = `
+    const errBox = document.getElementById("invalidErrors");
+    if (invalidRows.length > 0) {
+      errBox.classList.remove("hidden");
+      errBox.innerHTML = `
       <div class="import-errors-title">${invalidRows.length} row${invalidRows.length > 1 ? "s" : ""} contain errors:</div>
       <ul>
         ${invalidRows
@@ -3076,218 +3106,231 @@ function renderPreviewUI() {
         ${invalidRows.length > 10 ? `<li>... and ${invalidRows.length - 10} more error${invalidRows.length - 10 > 1 ? "s" : ""}</li>` : ""}
       </ul>
     `;
-  } else {
-    errBox.classList.add("hidden");
+    } else {
+      errBox.classList.add("hidden");
+    }
+
+    const btn = document.getElementById("importConfirmBtn");
+    if (validInvoices.length > 0) {
+      btn.disabled = false;
+      btn.textContent = `Import ${validInvoices.length} Invoice${validInvoices.length > 1 ? "s" : ""}`;
+    } else {
+      btn.disabled = true;
+      btn.textContent = "No valid invoices";
+    }
   }
 
-  const btn = document.getElementById("importConfirmBtn");
-  if (validInvoices.length > 0) {
-    btn.disabled = false;
-    btn.textContent = `Import ${validInvoices.length} Invoice${validInvoices.length > 1 ? "s" : ""}`;
-  } else {
-    btn.disabled = true;
-    btn.textContent = "No valid invoices";
+  function goToStep(step) {
+    importStep = step;
+
+    document.getElementById("importStep1").classList.add("hidden");
+    document.getElementById("importStep2").classList.add("hidden");
+    document.getElementById("importStep3").classList.add("hidden");
+    document.getElementById("importStep" + step).classList.remove("hidden");
+
+    const backBtn = document.getElementById("importBackBtn");
+    const nextBtn = document.getElementById("importNextBtn");
+    const confirmBtn = document.getElementById("importConfirmBtn");
+
+    if (step === 1) {
+      backBtn.classList.add("hidden");
+      nextBtn.classList.add("hidden");
+      confirmBtn.classList.add("hidden");
+    } else if (step === 2) {
+      backBtn.classList.remove("hidden");
+      nextBtn.classList.remove("hidden");
+      confirmBtn.classList.add("hidden");
+      renderMappingUI();
+    } else if (step === 3) {
+      backBtn.classList.remove("hidden");
+      nextBtn.classList.add("hidden");
+      confirmBtn.classList.remove("hidden");
+      renderPreviewUI();
+    }
   }
-}
 
-function goToStep(step) {
-  importStep = step;
-
-  document.getElementById("importStep1").classList.add("hidden");
-  document.getElementById("importStep2").classList.add("hidden");
-  document.getElementById("importStep3").classList.add("hidden");
-  document.getElementById("importStep" + step).classList.remove("hidden");
-
-  const backBtn = document.getElementById("importBackBtn");
-  const nextBtn = document.getElementById("importNextBtn");
-  const confirmBtn = document.getElementById("importConfirmBtn");
-
-  if (step === 1) {
-    backBtn.classList.add("hidden");
-    nextBtn.classList.add("hidden");
-    confirmBtn.classList.add("hidden");
-  } else if (step === 2) {
-    backBtn.classList.remove("hidden");
-    nextBtn.classList.remove("hidden");
-    confirmBtn.classList.add("hidden");
-    renderMappingUI();
-  } else if (step === 3) {
-    backBtn.classList.remove("hidden");
-    nextBtn.classList.add("hidden");
-    confirmBtn.classList.remove("hidden");
-    renderPreviewUI();
+  function importGoBack() {
+    if (importStep === 2) goToStep(1);
+    else if (importStep === 3) goToStep(2);
   }
-}
 
-function importGoBack() {
-  if (importStep === 2) goToStep(1);
-  else if (importStep === 3) goToStep(2);
-}
+  function importGoNext() {
+    if (importStep === 2) goToStep(3);
+  }
 
-function importGoNext() {
-  if (importStep === 2) goToStep(3);
-}
+  function confirmImport() {
+    if (validInvoices.length === 0) return;
 
-function confirmImport() {
-  if (validInvoices.length === 0) return;
+    const count = validInvoices.length;
+    validInvoices.forEach((inv) => invoices.push(inv));
+    saveInvoices();
 
-  const count = validInvoices.length;
-  validInvoices.forEach((inv) => invoices.push(inv));
-  saveInvoices();
+    showToast(
+      `${count} invoice${count > 1 ? "s" : ""} imported successfully`,
+      "success",
+    );
+    closeImportModal();
+    refreshAll();
+  }
 
-  showToast(
-    `${count} invoice${count > 1 ? "s" : ""} imported successfully`,
-    "success",
-  );
-  closeImportModal();
-  refreshAll();
-}
-
-function downloadSampleCSV() {
-  const sample = `Client Name,Phone,Email,Invoice Number,Amount,Currency,Due Date,Work,Notes
+  function downloadSampleCSV() {
+    const sample = `Client Name,Phone,Email,Invoice Number,Amount,Currency,Due Date,Work,Notes
 Acme Studios,+919876543210,acme@example.com,INV-047,25000,INR,2026-09-10,Video editing,Regular client
 Beta Corp,+919876543211,beta@example.com,INV-048,40000,INR,2026-09-05,Web design,Prefers WhatsApp
 Gamma Ltd,+919876543212,gamma@example.com,INV-049,15000,INR,2026-09-20,Logo design,New client`;
 
-  const blob = new Blob([sample], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "invoicefollow-sample.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-}
-
-// ============================================
-// GOOGLE SHEETS IMPORT
-// ============================================
-function openSheetModal() {
-  document.getElementById("sheetUrlInput").value = "";
-  document.getElementById("sheetStatus").textContent = "";
-  document.getElementById("sheetModal").classList.remove("hidden");
-}
-
-function closeSheetModal() {
-  document.getElementById("sheetModal").classList.add("hidden");
-}
-
-async function fetchGoogleSheet() {
-  const url = document.getElementById("sheetUrlInput").value.trim();
-  const statusEl = document.getElementById("sheetStatus");
-
-  if (!url) {
-    statusEl.textContent = "Please paste a Google Sheet URL.";
-    return;
+    const blob = new Blob([sample], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "invoicefollow-sample.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
-  if (!url.includes("docs.google.com/spreadsheets")) {
-    statusEl.textContent = "This doesn't look like a Google Sheets URL.";
-    return;
+  // ============================================
+  // GOOGLE SHEETS IMPORT
+  // ============================================
+  function openSheetModal() {
+    document.getElementById("sheetUrlInput").value = "";
+    document.getElementById("sheetStatus").textContent = "";
+    document.getElementById("sheetModal").classList.remove("hidden");
   }
 
-  statusEl.textContent = "Fetching your sheet...";
+  function closeSheetModal() {
+    document.getElementById("sheetModal").classList.add("hidden");
+  }
 
-  try {
-    const response = await fetch("/api/fetch-sheet", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sheetUrl: url }),
-    });
+  async function fetchGoogleSheet() {
+    const url = document.getElementById("sheetUrlInput").value.trim();
+    const statusEl = document.getElementById("sheetStatus");
 
-    const data = await response.json();
-
-    if (!response.ok || !data.success) {
-      statusEl.textContent = "";
-      showToast(
-        "Could not fetch sheet: " + (data.error || "Unknown error"),
-        "error",
-      );
+    if (!url) {
+      statusEl.textContent = "Please paste a Google Sheet URL.";
       return;
     }
 
-    Papa.parse(data.csv, {
-      header: true,
-      skipEmptyLines: true,
-      complete: function (results) {
-        if (results.data.length === 0) {
-          statusEl.textContent = "Sheet is empty.";
-          return;
-        }
+    if (!url.includes("docs.google.com/spreadsheets")) {
+      statusEl.textContent = "This doesn't look like a Google Sheets URL.";
+      return;
+    }
 
-        if (results.data.length > 500) {
-          statusEl.textContent =
-            "Sheet has more than 500 rows. Please reduce it.";
-          return;
-        }
+    statusEl.textContent = "Fetching your sheet...";
 
-        csvData = results.data;
-        csvHeaders = results.meta.fields || [];
-        columnMapping = {};
-        autoMapColumns();
+    try {
+      const response = await fetch("/api/fetch-sheet", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sheetUrl: url }),
+      });
 
-        closeSheetModal();
+      const data = await response.json();
 
-        // ✅ FIX: goToStep() use karo — importStep automatically set hoga
-        goToStep(2);
-
-        document.getElementById("importModal").classList.remove("hidden");
-      },
-    });
-  } catch (err) {
-    statusEl.textContent = "";
-    showToast("Error: " + err.message, "error");
-  }
-}
-// ============================================
-// PAGE LOAD — Init
-// ============================================
-document.addEventListener("DOMContentLoaded", async () => {
-  const authenticated = await checkAuthAndLoad();
-  if (!authenticated) return;
-
-  // ✅ Fetch exchange rates in parallel with other init
-  fetchExchangeRates().catch((err) => console.warn("Rates fetch failed:", err));
-
-  // Restore stats display preference
-  const savedMode = localStorage.getItem("invoicefollow_stats_display");
-  if (savedMode === "converted" || savedMode === "grouped") {
-    statsDisplayMode = savedMode;
-  }
-
-  await migrateLocalDataToSupabase();
-  await grantSignupBonusIfNeeded();
-
-  loadData();
-  updateGreeting();
-  renderStats(); // ← Yeh ab multi-currency handle karega
-  renderTodayActions();
-  renderInvoices();
-  await renderUserMenu();
-  attachEventListeners();
-
-  // URL parameter check (buy credits)
-  const urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get("buy") === "credits") {
-    setTimeout(() => {
-      if (isGuestMode) {
-        showConfirm(
-          "Buying credits requires an account.\n\nSign up free — you'll also get 15 bonus credits (25 total).",
-          {
-            title: "Sign up required",
-            type: "info",
-            okText: "Sign up",
-            cancelText: "Not now",
-          },
-        ).then((goSignup) => {
-          if (goSignup) window.location.href = "signup.html";
-        });
-      } else {
-        showBuyCreditsModal();
+      if (!response.ok || !data.success) {
+        statusEl.textContent = "";
+        showToast(
+          "Could not fetch sheet: " + (data.error || "Unknown error"),
+          "error",
+        );
+        return;
       }
-      window.history.replaceState({}, "", "dashboard.html");
-    }, 500);
+
+      Papa.parse(data.csv, {
+        header: true,
+        skipEmptyLines: true,
+        complete: function (results) {
+          if (results.data.length === 0) {
+            statusEl.textContent = "Sheet is empty.";
+            return;
+          }
+
+          if (results.data.length > 500) {
+            statusEl.textContent =
+              "Sheet has more than 500 rows. Please reduce it.";
+            return;
+          }
+
+          csvData = results.data;
+          csvHeaders = results.meta.fields || [];
+          columnMapping = {};
+          autoMapColumns();
+
+          closeSheetModal();
+
+          // ✅ FIX: goToStep() use karo — importStep automatically set hoga
+          goToStep(2);
+
+          document.getElementById("importModal").classList.remove("hidden");
+        },
+      });
+    } catch (err) {
+      statusEl.textContent = "";
+      showToast("Error: " + err.message, "error");
+    }
   }
-});
+  // ============================================
+  // PAGE LOAD — Init
+  // ============================================
+  document.addEventListener("DOMContentLoaded", async () => {
+    const authenticated = await checkAuthAndLoad();
+    if (!authenticated) return;
+
+    // ✅ Fetch exchange rates in parallel with other init
+    fetchExchangeRates().catch((err) =>
+      console.warn("Rates fetch failed:", err),
+    );
+
+    // Restore stats display preference
+    const savedMode = localStorage.getItem("invoicefollow_stats_display");
+    if (savedMode === "converted" || savedMode === "grouped") {
+      statsDisplayMode = savedMode;
+    }
+
+    await migrateLocalDataToSupabase();
+    await grantSignupBonusIfNeeded();
+
+    loadData();
+    updateGreeting();
+    renderStats();
+    renderTodayActions();
+    renderInvoices();
+    await renderUserMenu();
+
+    // ✅ FIX: Attach event listeners with error handling
+    try {
+      attachEventListeners();
+      console.log("✓ Event listeners attached");
+    } catch (err) {
+      console.error("❌ attachEventListeners() failed:", err);
+      console.error("Stack:", err.stack);
+    }
+
+    // URL parameter check (buy credits)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("buy") === "credits") {
+      setTimeout(() => {
+        if (isGuestMode) {
+          showConfirm(
+            "Buying credits requires an account.\n\nSign up free — you'll also get 15 bonus credits (25 total).",
+            {
+              title: "Sign up required",
+              type: "info",
+              okText: "Sign up",
+              cancelText: "Not now",
+            },
+          ).then((goSignup) => {
+            if (goSignup) window.location.href = "signup.html";
+          });
+        } else {
+          showBuyCreditsModal();
+        }
+        window.history.replaceState({}, "", "dashboard.html");
+      }, 500);
+    }
+  });
+
+  // Close the surrounding initialization scope.
+}
 
 // ============================================
 // END OF FILE
